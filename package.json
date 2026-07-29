@@ -1,0 +1,12 @@
+{
+  "name": "yoursoulpurposegems",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Your Soul Purpose Gems storefront — static pages plus a Vercel serverless function that emails order requests.",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "resend": "^6.18.1"
+  }
+}

@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Soul Purpose Gems | Joyeria Artesanal</title>
+    <title>Order Received | Your Soul Purpose Gems</title>
     <link rel="stylesheet" href="./CSS/style.css">
 </head>
 <body>
     <header>
         <nav>
-            <div class="logo" href="./index.html">Your Souls Purpose Gems</div>
+            <a class="logo" href="./index.html">Your Soul Purpose Gems</a>
             <ul class="nav-links">
                 <li><a href="./index.html" data-en="Home" data-es="Inicio">Home</a></li>
                 <li><a href="./about.html" data-en="About" data-es="Nosotros">About</a></li>
@@ -20,7 +20,7 @@
                 <button id="langBtn" class="lang-btn">ES</button>
             </div>
             <div class="cart-icon-wrapper">
-                <a href="cart.html" class="cart-icon">
+                <a href="./cart.html" class="cart-icon">
                     🛒
                     <span class="cart-count">0</span>
                 </a>
@@ -36,17 +36,20 @@
     <main class="success-main">
         <section class="success-content">
             <div class="success-icon">✓</div>
-            <h1 data-en="Order Successful!" data-es="¡Pedido Exitoso!">Order Successful!</h1>
-            <p data-en="Thank you for your purchase. You will receive a confirmation email shortly." data-es="Gracias por tu compra. Recibirás un correo de confirmación en breve.">Thank you for your purchase. You will receive a confirmation email shortly.</p>
-            
-            <div class="order-info" id="orderInfo">
-                <h2 data-en="Order Details" data-es="Detalles del Pedido">Order Details</h2>
-                <p data-en="Loading order information..." data-es="Cargando información del pedido...">Loading order information...</p>
+            <h1 data-en="Order Request Received!" data-es="¡Solicitud de Pedido Recibida!">Order Request Received!</h1>
+            <p data-en="Thank you! Your request has been sent to us. No payment has been taken — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery."
+               data-es="¡Gracias! Tu solicitud nos ha sido enviada. No se ha realizado ningún pago — te contactaremos por WhatsApp para coordinar el pago (efectivo o e-transfer) y la entrega o recogida.">Thank you! Your request has been sent to us. No payment has been taken — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery.</p>
+
+            <div class="order-info" id="orderInfo" hidden>
+                <h2 data-en="Order Reference" data-es="Referencia del Pedido">Order Reference</h2>
+                <p><strong id="orderNumber"></strong></p>
+                <p data-en="Please keep this reference handy when we get in touch."
+                   data-es="Por favor guarda esta referencia para cuando te contactemos.">Please keep this reference handy when we get in touch.</p>
             </div>
-            
+
             <div class="success-actions">
-                <a href="index.html" class="btn-primary" data-en="Return to Home" data-es="Volver al Inicio">Return to Home</a>
-                <a href="products.html" class="btn-secondary" data-en="Continue Shopping" data-es="Continuar Comprando">Continue Shopping</a>
+                <a href="./index.html" class="btn-primary" data-en="Return to Home" data-es="Volver al Inicio">Return to Home</a>
+                <a href="./services.html" class="btn-secondary" data-en="Continue Shopping" data-es="Continuar Comprando">Continue Shopping</a>
             </div>
         </section>
     </main>
@@ -55,33 +58,19 @@
         <p>&copy; 2026 Your Soul Purpose Gems. All rights reserved.</p>
     </footer>
 
+    <script src="./JS/script.js"></script>
     <script>
-        // Clear cart after successful purchase
+        // The cart was already cleared before redirecting here, but clear it
+        // again in case someone lands on this page directly after a back/forward.
         localStorage.removeItem('cart');
-        
-        // Get session ID from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get('session_id');
-        
-        if (sessionId) {
-            // In production, fetch order details from your backend
-            // fetch(`/checkout-session/${sessionId}`)
-            //     .then(response => response.json())
-            //     .then(session => {
-            //         document.getElementById('orderInfo').innerHTML = `
-            //             <h2>Order Details</h2>
-            //             <p>Order ID: ${session.id}</p>
-            //             <p>Amount: $${(session.amount_total / 100).toFixed(2)}</p>
-            //         `;
-            //     });
-            
-            document.getElementById('orderInfo').innerHTML = `
-                <h2 data-en="Order Details" data-es="Detalles del Pedido">Order Details</h2>
-                <p data-en="Order ID:" data-es="ID del Pedido:">Order ID: ${sessionId.substring(0, 20)}...</p>
-                <p data-en="We've sent a confirmation email with your order details." data-es="Hemos enviado un correo de confirmación con los detalles de tu pedido.">We've sent a confirmation email with your order details.</p>
-            `;
+
+        // submitOrder() redirects here with ?order=YSPG-...
+        // textContent, not innerHTML — the value comes from the URL.
+        const orderNumber = new URLSearchParams(window.location.search).get('order');
+        if (orderNumber) {
+            document.getElementById('orderNumber').textContent = orderNumber.slice(0, 40);
+            document.getElementById('orderInfo').hidden = false;
         }
     </script>
-    <script src="./JS/script.js"></script>
 </body>
 </html>

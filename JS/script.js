@@ -1,576 +1,530 @@
 // ============================================
+// STATE
+// ============================================
+
+const CART_KEY = 'cart';
+const LANG_KEY = 'lang';
+const MAX_QUANTITY = 99;
+
+let cart = [];
+let currentLang = 'en';
+
+// ============================================
+// HELPERS
+// ============================================
+
+function money(amount) {
+    return `$${amount.toFixed(2)}`;
+}
+
+function t(en, es) {
+    return currentLang === 'es' ? es : en;
+}
+
+// ============================================
 // CART MANAGEMENT
 // ============================================
 
-let cart = JSON.parse(localStorage.getItem('cart')) || [];
-console.log("Loaded cart:", cart);
-console.log("Script loaded at:", performance.now());
+// localStorage is user-editable, so never trust its shape. Anything that does
+// not survive this pass is dropped rather than allowed to crash the cart page.
+function normalizeItem(raw) {
+    if (!raw || typeof raw !== 'object') return null;
 
-// Load cart from localStorage on page load
-function loadCart() {
-    const savedCart = localStorage.getItem('cart');
-    console.log('Loading cart from localStorage:', savedCart);
-    console.log('localStorage keys:', Object.keys(localStorage));
-    
-    if (savedCart) {
-        try {
-            cart = JSON.parse(savedCart);
-            console.log('Cart parsed successfully:', cart);
-        } catch (e) {
-            console.error('Error parsing cart:', e);
-            cart = [];
-        }
-    } else {
-        console.log('No cart found in localStorage');
-        cart = [];
-    }
-    updateCartCount();
-    console.log('Cart after loading:', cart);
+    const id = typeof raw.id === 'string' ? raw.id.trim() : '';
+    const price = Number(raw.price);
+    const quantity = Math.floor(Number(raw.quantity));
+
+    if (!id) return null;
+    if (!Number.isFinite(price) || price < 0) return null;
+    if (!Number.isFinite(quantity) || quantity < 1) return null;
+
+    return {
+        id,
+        name: typeof raw.name === 'string' ? raw.name : id,
+        nameEs: typeof raw.nameEs === 'string' ? raw.nameEs : '',
+        price,
+        image: typeof raw.image === 'string' ? raw.image : '',
+        quantity: Math.min(quantity, MAX_QUANTITY)
+    };
 }
 
-// Update cart count badge
-function updateCartCount() {
-    const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
-    const cartCountElements = document.querySelectorAll('.cart-count');
-    cartCountElements.forEach(el => {
-        el.textContent = cartCount;
-    });
+function loadCart() {
+    let parsed = [];
+    try {
+        parsed = JSON.parse(localStorage.getItem(CART_KEY)) || [];
+    } catch (e) {
+        parsed = [];
+    }
+
+    cart = (Array.isArray(parsed) ? parsed : []).map(normalizeItem).filter(Boolean);
+    updateCartCount();
 }
 
 function saveCart() {
-    console.log("Saving cart:", cart);
-    localStorage.setItem('cart', JSON.stringify(cart));
+    try {
+        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    } catch (e) {
+        // Private browsing / storage full. The in-memory cart still works for
+        // this page, so keep going rather than breaking the button.
+        console.warn('Could not save the cart:', e);
+    }
     updateCartCount();
 }
 
+function clearCartStorage() {
+    cart = [];
+    try {
+        localStorage.removeItem(CART_KEY);
+    } catch (e) {
+        /* ignore */
+    }
+    updateCartCount();
+}
 
-// Add item to cart
+function updateCartCount() {
+    const count = cart.reduce((total, item) => total + item.quantity, 0);
+    document.querySelectorAll('.cart-count').forEach(el => {
+        el.textContent = count;
+    });
+}
+
 function addToCart(button) {
-    console.log("Button dataset:", button.dataset);
-    console.log("Cart BEFORE add:", cart);
+    const item = normalizeItem({
+        id: button.dataset.id,
+        name: button.dataset.name,
+        nameEs: button.dataset.nameEs,
+        price: button.dataset.price,
+        image: button.dataset.image,
+        quantity: 1
+    });
 
-    const { id, name, nameEs, price, image } = button.dataset;
-
-    const existingItem = cart.find(item => item.id === id);
-
-    if (existingItem) {
-        existingItem.quantity++;
-    } else {
-        cart.push({
-            id,
-            name,
-            nameEs,
-            price: parseFloat(price),
-            image,
-            quantity: 1
-        });
+    if (!item) {
+        console.error('Add to cart button is missing a valid data-id / data-price', button.dataset);
+        return;
     }
 
-    console.log("Cart AFTER add:", cart);
+    const existing = cart.find(entry => entry.id === item.id);
+    if (existing) {
+        if (existing.quantity >= MAX_QUANTITY) return;
+        existing.quantity++;
+    } else {
+        cart.push(item);
+    }
 
     saveCart();
+    showAddedToCartMessage();
 }
 
-
-// Show "Added to Cart" message
-function showAddedToCartMessage() {
-    const message = document.createElement('div');
-    message.className = 'added-to-cart-message';
-    message.textContent = currentLang === 'en' ? 'Added to cart!' : '¡Agregado al carrito!';
-    message.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        background: #4CAF50;
-        color: white;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-    `;
-    
-    document.body.appendChild(message);
-    
-    setTimeout(() => {
-        message.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => message.remove(), 300);
-    }, 2000);
-}
-
-// Add CSS for animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(400px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(400px); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
-
-// Remove item from cart
 function removeFromCart(id) {
     cart = cart.filter(item => item.id !== id);
     saveCart();
     renderCart();
 }
 
-// Update item quantity
 function updateQuantity(id, change) {
-    const item = cart.find(item => item.id === id);
-    if (item) {
-        item.quantity += change;
-        if (item.quantity <= 0) {
-            removeFromCart(id);
-        } else {
-            saveCart();
-            renderCart();
-        }
+    const item = cart.find(entry => entry.id === id);
+    if (!item) return;
+
+    const next = item.quantity + change;
+    if (next <= 0) {
+        removeFromCart(id);
+        return;
     }
+    if (next > MAX_QUANTITY) return;
+
+    item.quantity = next;
+    saveCart();
+    renderCart();
 }
 
-// Render cart page
+// ============================================
+// "ADDED TO CART" TOAST
+// ============================================
+
+let toastTimers = [];
+
+function showAddedToCartMessage() {
+    // Clear timers from a previous toast so rapid clicks do not leave one
+    // stranded on screen.
+    toastTimers.forEach(clearTimeout);
+    toastTimers = [];
+    document.querySelectorAll('.added-to-cart-message').forEach(el => el.remove());
+
+    const message = document.createElement('div');
+    message.className = 'added-to-cart-message';
+    message.setAttribute('role', 'status');
+    message.textContent = t('Added to cart!', '¡Agregado al carrito!');
+    document.body.appendChild(message);
+
+    toastTimers.push(setTimeout(() => {
+        message.classList.add('leaving');
+        toastTimers.push(setTimeout(() => message.remove(), 300));
+    }, 2000));
+}
+
+// ============================================
+// CART PAGE RENDERING
+// ============================================
+
 function renderCart() {
     const cartItemsContainer = document.getElementById('cartItems');
     const emptyCart = document.getElementById('emptyCart');
     const cartContent = document.getElementById('cartContent');
-    
-    if (!cartItemsContainer) return; // Not on cart page
-    
-    console.log('Rendering cart, items:', cart); // Debug log
-    
+
+    if (!cartItemsContainer || !emptyCart || !cartContent) return; // Not the cart page
+
     if (cart.length === 0) {
         emptyCart.style.display = 'block';
         cartContent.style.display = 'none';
         return;
     }
-    
+
     emptyCart.style.display = 'none';
     cartContent.style.display = 'grid';
-    
-    cartItemsContainer.innerHTML = '';
-    
+
+    // Built with DOM nodes rather than an innerHTML template: item names come
+    // from localStorage, and string concatenation there is both an injection
+    // vector and a re-parse per loop iteration.
+    const fragment = document.createDocumentFragment();
+
     cart.forEach(item => {
-        const itemTotal = (item.price * item.quantity).toFixed(2);
-        const itemName = currentLang === 'es' ? item.nameEs : item.name;
-        
-        const cartItemHTML = `
-            <div class="cart-item">
-                <div class="cart-item-image">
-                    <img src="${item.image}" alt="${itemName}">
-                </div>
-                <div class="cart-item-details">
-                    <h3>${itemName}</h3>
-                    <p class="cart-item-price">${item.price.toFixed(2)}</p>
-                    <div class="quantity-controls">
-                        <button class="qty-btn" onclick="updateQuantity('${item.id}', -1)">−</button>
-                        <span class="qty-display">${item.quantity}</span>
-                        <button class="qty-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
-                    </div>
-                </div>
-                <div class="cart-item-actions">
-                    <div class="item-total">${itemTotal}</div>
-                    <button class="remove-btn" onclick="removeFromCart('${item.id}')" data-en="Remove" data-es="Eliminar">Remove</button>
-                </div>
-            </div>
-        `;
-        
-        cartItemsContainer.innerHTML += cartItemHTML;
+        const itemName = (currentLang === 'es' && item.nameEs) ? item.nameEs : item.name;
+
+        const row = document.createElement('div');
+        row.className = 'cart-item';
+
+        const imageWrap = document.createElement('div');
+        imageWrap.className = 'cart-item-image';
+        if (item.image) {
+            const img = document.createElement('img');
+            img.src = item.image;
+            img.alt = itemName;
+            img.loading = 'lazy';
+            imageWrap.appendChild(img);
+        }
+
+        const details = document.createElement('div');
+        details.className = 'cart-item-details';
+
+        const heading = document.createElement('h3');
+        heading.textContent = itemName;
+
+        const price = document.createElement('p');
+        price.className = 'cart-item-price';
+        price.textContent = money(item.price);
+
+        const controls = document.createElement('div');
+        controls.className = 'quantity-controls';
+        controls.appendChild(quantityButton('−', item.id, -1, t('Decrease quantity', 'Reducir cantidad')));
+
+        const qtyDisplay = document.createElement('span');
+        qtyDisplay.className = 'qty-display';
+        qtyDisplay.textContent = item.quantity;
+        controls.appendChild(qtyDisplay);
+
+        controls.appendChild(quantityButton('+', item.id, 1, t('Increase quantity', 'Aumentar cantidad')));
+
+        details.append(heading, price, controls);
+
+        const actions = document.createElement('div');
+        actions.className = 'cart-item-actions';
+
+        const total = document.createElement('div');
+        total.className = 'item-total';
+        total.textContent = money(item.price * item.quantity);
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'remove-btn';
+        remove.dataset.action = 'remove';
+        remove.dataset.id = item.id;
+        remove.setAttribute('data-en', 'Remove');
+        remove.setAttribute('data-es', 'Eliminar');
+        remove.textContent = t('Remove', 'Eliminar');
+
+        actions.append(total, remove);
+        row.append(imageWrap, details, actions);
+        fragment.appendChild(row);
     });
-    
+
+    cartItemsContainer.replaceChildren(fragment);
     updateCartSummary();
-    
-    // Update language for dynamically added elements
-    const translatableElements = cartItemsContainer.querySelectorAll('[data-en][data-es]');
-    translatableElements.forEach(element => {
-        element.textContent = element.getAttribute(`data-${currentLang}`);
-    });
 }
 
-// Update cart summary
+function quantityButton(label, id, change, ariaLabel) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'qty-btn';
+    button.textContent = label;
+    button.dataset.action = 'quantity';
+    button.dataset.id = id;
+    button.dataset.change = String(change);
+    button.setAttribute('aria-label', ariaLabel);
+    return button;
+}
+
 function updateCartSummary() {
     const subtotalElement = document.getElementById('subtotal');
     const totalElement = document.getElementById('total');
-    
-    if (!subtotalElement || !totalElement) return; // Not on cart page
-    
-    const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-    
-    subtotalElement.textContent = `${subtotal.toFixed(2)}`;
-    totalElement.textContent = `${subtotal.toFixed(2)}`;
+
+    if (!subtotalElement || !totalElement) return;
+
+    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    subtotalElement.textContent = money(subtotal);
+    totalElement.textContent = money(subtotal);
 }
 
-// Submit Order (Simple - No Payment)
+// ============================================
+// ORDER SUBMISSION (no payment — emails the shop owner)
+// ============================================
+
 async function submitOrder(customerInfo) {
-    // Replace with your deployed Vercel URL after deployment
-    const backendUrl = 'https://your-vercel-app.vercel.app';
-    
-    try {
-        // Show loading state
-        const submitBtn = document.getElementById('submitOrderBtn');
-        const originalText = submitBtn.textContent;
+    const submitBtn = document.getElementById('submitOrderBtn');
+
+    if (cart.length === 0) {
+        alert(t('Your cart is empty.', 'Tu carrito está vacío.'));
+        return;
+    }
+
+    const originalText = submitBtn ? submitBtn.textContent : '';
+    if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = currentLang === 'en' ? 'Submitting...' : 'Enviando...';
-        
-        // Call your backend to submit order
-        const response = await fetch(`${backendUrl}/api/submit-order`, {
+        submitBtn.textContent = t('Submitting...', 'Enviando...');
+    }
+
+    try {
+        // Relative path: the API and the pages ship in the same Vercel
+        // deployment, so there is no host to hardcode and no CORS hop.
+        const response = await fetch('/api/submit-order', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                items: cart,
-                customerInfo: customerInfo
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: cart, customerInfo })
         });
-        
+
+        const result = await response.json().catch(() => ({}));
+
         if (!response.ok) {
-            throw new Error('Failed to submit order');
+            throw new Error(result.error || `Request failed with status ${response.status}`);
         }
-        
-        const result = await response.json();
-        
-        // Clear cart
-        cart = [];
-        localStorage.removeItem('cart');
-        updateCartCount();
-        
-        // Show success message
-        alert(currentLang === 'en' 
-            ? `Order submitted successfully! Order #${result.orderNumber}\n\nWe will contact you via WhatsApp shortly to arrange payment and delivery.`
-            : `¡Pedido enviado exitosamente! Pedido #${result.orderNumber}\n\nTe contactaremos por WhatsApp pronto para coordinar el pago y la entrega.`
-        );
-        
-        // Redirect to home
-        window.location.href = './home.html';
-        
+
+        clearCartStorage();
+        window.location.href = `./success.html?order=${encodeURIComponent(result.orderNumber || '')}`;
     } catch (error) {
-        console.error('Error:', error);
-        alert(currentLang === 'en' 
-            ? 'An error occurred. Please try again or contact us directly.'
-            : 'Ocurrió un error. Por favor intenta de nuevo o contáctanos directamente.');
-        const submitBtn = document.getElementById('submitOrderBtn');
+        console.error('Could not submit the order:', error);
+        alert(t(
+            'An error occurred. Please try again or contact us directly at yoursoulpurposegems@gmail.com.',
+            'Ocurrió un error. Por favor intenta de nuevo o contáctanos directamente en yoursoulpurposegems@gmail.com.'
+        ));
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = currentLang === 'en' ? 'Submit Order Request' : 'Enviar Solicitud de Pedido';
+            submitBtn.textContent = originalText || t('Submit Order Request', 'Enviar Solicitud de Pedido');
         }
     }
 }
 
-// Stripe Checkout (Keep for future use)
-async function initiateCheckout(customerInfo) {
-    // Replace with your actual Stripe publishable key from https://dashboard.stripe.com/test/apikeys
-    const stripe = Stripe('pk_test_YOUR_PUBLISHABLE_KEY_HERE');
-    
-    // Replace with your deployed Vercel URL after deployment
-    const backendUrl = 'https://your-vercel-app.vercel.app';
-    
-    try {
-        // Show loading state
-        const checkoutBtn = document.getElementById('checkoutBtn');
-        const originalText = checkoutBtn.textContent;
-        checkoutBtn.disabled = true;
-        checkoutBtn.textContent = currentLang === 'en' ? 'Processing...' : 'Procesando...';
-        
-        // Call your backend to create checkout session
-        const response = await fetch(`${backendUrl}/api/create-checkout-session`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                items: cart,
-                customerInfo: customerInfo
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to create checkout session');
-        }
-        
-        const session = await response.json();
-        
-        // Redirect to Stripe Checkout
-        const result = await stripe.redirectToCheckout({
-            sessionId: session.id
-        });
-        
-        if (result.error) {
-            alert(result.error.message);
-            checkoutBtn.disabled = false;
-            checkoutBtn.textContent = originalText;
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-        const checkoutBtn = document.getElementById('checkoutBtn');
-        if (checkoutBtn) {
-            checkoutBtn.disabled = false;
-            checkoutBtn.textContent = currentLang === 'en' ? 'Proceed to Checkout' : 'Proceder al Pago';
-        }
+// ============================================
+// LANGUAGE
+// ============================================
+
+function applyLanguage() {
+    document.documentElement.lang = currentLang;
+
+    const langBtn = document.getElementById('langBtn');
+    if (langBtn) {
+        // The button shows the language you can switch *to*.
+        langBtn.textContent = currentLang === 'en' ? 'ES' : 'EN';
+        langBtn.setAttribute('aria-label', t('Switch to Spanish', 'Cambiar a inglés'));
     }
+
+    document.querySelectorAll('[data-en][data-es]').forEach(element => {
+        const translation = element.getAttribute(`data-${currentLang}`);
+        if (translation) {
+            element.textContent = translation;
+        }
+    });
+
+    if (document.getElementById('cartItems')) {
+        renderCart();
+    }
+}
+
+function switchLanguage() {
+    currentLang = currentLang === 'en' ? 'es' : 'en';
+    try {
+        localStorage.setItem(LANG_KEY, currentLang);
+    } catch (e) {
+        /* ignore */
+    }
+    applyLanguage();
+}
+
+function loadLanguage() {
+    let saved = null;
+    try {
+        saved = localStorage.getItem(LANG_KEY);
+    } catch (e) {
+        /* ignore */
+    }
+    currentLang = saved === 'es' ? 'es' : 'en';
 }
 
 // ============================================
 // NAVIGATION & UI
 // ============================================
 
-// Burger Menu Toggle
-const burger = document.querySelector('.burger');
-const nav = document.querySelector('.nav-links');
-const navLinks = document.querySelectorAll('.nav-links a');
+function setupNavigation() {
+    const burger = document.querySelector('.burger');
+    const nav = document.querySelector('.nav-links');
 
-// Language Switcher
-let currentLang = 'en';
-const langBtn = document.getElementById('langBtn');
+    if (!burger || !nav) return;
 
-function switchLanguage() {
-    currentLang = currentLang === 'en' ? 'es' : 'en';
-    langBtn.textContent = currentLang === 'en' ? 'ES' : 'EN';
-    
-    // Update all elements with data-en and data-es attributes
-    const translatableElements = document.querySelectorAll('[data-en][data-es]');
-    translatableElements.forEach(element => {
-        const translation = element.getAttribute(`data-${currentLang}`);
-        if (translation) {
-            element.textContent = translation;
+    burger.addEventListener('click', () => {
+        nav.classList.toggle('active');
+        burger.classList.toggle('active');
+    });
+
+    nav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            nav.classList.remove('active');
+            burger.classList.remove('active');
+        });
+    });
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (window.innerWidth > 768) {
+                nav.classList.remove('active');
+                burger.classList.remove('active');
+            }
+        }, 250);
+    });
+}
+
+function setupSlideshow() {
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.slide-dot');
+
+    if (slides.length === 0) return;
+
+    let currentSlide = 0;
+
+    function showSlide(n) {
+        slides.forEach(slide => slide.classList.remove('active'));
+        dots.forEach(dot => dot.classList.remove('active'));
+
+        currentSlide = (n + slides.length) % slides.length;
+
+        slides[currentSlide].classList.add('active');
+        if (dots[currentSlide]) {
+            dots[currentSlide].classList.add('active');
         }
-    });
-    
-    // Re-render cart if on cart page to update language
-    if (typeof renderCart === 'function' && document.getElementById('cartItems')) {
-        renderCart();
     }
-}
 
-if (langBtn) {
-    langBtn.addEventListener('click', switchLanguage);
-}
+    let slideInterval = setInterval(() => showSlide(currentSlide + 1), 5000);
 
-burger.addEventListener('click', () => {
-    nav.classList.toggle('active');
-    burger.classList.toggle('active');
-});
-
-// Close menu when clicking a link
-navLinks.forEach(link => {
-    link.addEventListener('click', () => {
-        nav.classList.remove('active');
-        burger.classList.remove('active');
-    });
-});
-
-// ============================================
-// SLIDESHOW
-// ============================================
-
-let currentSlide = 0;
-const slides = document.querySelectorAll('.slide');
-const dots = document.querySelectorAll('.slide-dot');
-
-function showSlide(n) {
-    slides.forEach(slide => slide.classList.remove('active'));
-    dots.forEach(dot => dot.classList.remove('active'));
-    
-    currentSlide = (n + slides.length) % slides.length;
-    
-    slides[currentSlide].classList.add('active');
-    dots[currentSlide].classList.add('active');
-}
-
-function nextSlide() {
-    showSlide(currentSlide + 1);
-}
-
-// Auto-advance slideshow (only if slides exist)
-if (slides.length > 0) {
-    let slideInterval = setInterval(nextSlide, 5000);
-
-    // Manual navigation with dots
     dots.forEach((dot, index) => {
         dot.addEventListener('click', () => {
             clearInterval(slideInterval);
             showSlide(index);
-            slideInterval = setInterval(nextSlide, 5000);
+            slideInterval = setInterval(() => showSlide(currentSlide + 1), 5000);
+        });
+    });
+}
+
+function setupSmoothScrolling() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const href = this.getAttribute('href');
+            if (!href || href === '#') return;
+
+            let target = null;
+            try {
+                target = document.querySelector(href);
+            } catch (err) {
+                return; // Not a valid selector — let the browser handle it.
+            }
+
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     });
 }
 
 // ============================================
-// WINDOW RESIZE HANDLING
+// CHECKOUT FORM
 // ============================================
 
-let resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        // Close mobile menu on resize to desktop
-        if (window.innerWidth > 768) {
-            nav.classList.remove('active');
-            burger.classList.remove('active');
-        }
-    }, 250);
-});
+function setupCheckoutForm() {
+    const orderForm = document.getElementById('orderForm');
+    if (!orderForm) return;
 
-// ============================================
-// SMOOTH SCROLLING
-// ============================================
+    orderForm.addEventListener('submit', event => {
+        event.preventDefault();
 
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        const href = this.getAttribute('href');
-        
-        // Ignore if it's just "#" or empty
-        if (!href || href === '#') return;
-        
-        const target = document.querySelector(href);
-        
-        // Only scroll if the target element exists on THIS page
-        if (target) {
-            e.preventDefault();
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
-        // If target doesn't exist, let the browser handle the link normally
+        submitOrder({
+            name: document.getElementById('customerName').value.trim(),
+            email: document.getElementById('customerEmail').value.trim(),
+            phone: document.getElementById('customerPhone').value.trim(),
+            deliveryMethod: document.getElementById('deliveryMethod').value
+        });
     });
-});
+}
+
+// Quantity and remove buttons are created after load, so listen on the
+// container instead of binding per button (and instead of inline onclick).
+function setupCartInteractions() {
+    const cartItemsContainer = document.getElementById('cartItems');
+    if (!cartItemsContainer) return;
+
+    cartItemsContainer.addEventListener('click', event => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+
+        if (button.dataset.action === 'remove') {
+            removeFromCart(button.dataset.id);
+        } else if (button.dataset.action === 'quantity') {
+            updateQuantity(button.dataset.id, Number(button.dataset.change));
+        }
+    });
+}
 
 // ============================================
 // INITIALIZATION
 // ============================================
 
-// 1. Wait for the page to load
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing cart system...');
-    
-    // Load saved cart
+    loadLanguage();
     loadCart();
 
-    // If on cart page, render it
-    if (document.getElementById('cartItems')) {
-        console.log('Rendering cart page...');
-        renderCart();
-        
-        // Setup checkout form
-        setupCheckoutForm();
+    setupNavigation();
+    setupSlideshow();
+    setupSmoothScrolling();
+    setupCheckoutForm();
+    setupCartInteractions();
+
+    const langBtn = document.getElementById('langBtn');
+    if (langBtn) {
+        langBtn.addEventListener('click', switchLanguage);
     }
 
-    // Attach add-to-cart listeners (product pages)
-    const cartButtons = document.querySelectorAll('.add-to-cart');
-    cartButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            addToCart(e.currentTarget);
-        });
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', event => addToCart(event.currentTarget));
     });
+
+    // applyLanguage() renders the cart as part of its work.
+    applyLanguage();
 });
 
-// Setup checkout form functionality
-function setupCheckoutForm() {
-    const orderForm = document.getElementById('orderForm');
-    
-    // Handle form submission for simple orders
-    if (orderForm) {
-        orderForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const customerInfo = {
-                name: document.getElementById('customerName').value,
-                email: document.getElementById('customerEmail').value,
-                phone: document.getElementById('customerPhone').value,
-                deliveryMethod: document.getElementById('deliveryMethod').value
-            };
-            
-            submitOrder(customerInfo);
-        });
-    }
-    
-    // Old checkout form setup (for Stripe version - keep for future)
-    const deliveryMethod = document.getElementById('deliveryMethod');
-    const shippingFields = document.getElementById('shippingFields');
-    const checkoutForm = document.getElementById('checkoutForm');
-    const country = document.getElementById('country');
-    const stateLabel = document.getElementById('stateLabel');
-    
-    // Show/hide shipping fields based on delivery method
-    if (deliveryMethod && shippingFields) {
-        deliveryMethod.addEventListener('change', function() {
-            if (this.value === 'delivery') {
-                shippingFields.style.display = 'block';
-                // Make shipping fields required
-                document.getElementById('street').required = true;
-                document.getElementById('city').required = true;
-                document.getElementById('state').required = true;
-                document.getElementById('postalCode').required = true;
-            } else {
-                shippingFields.style.display = 'none';
-                // Make shipping fields optional
-                document.getElementById('street').required = false;
-                document.getElementById('city').required = false;
-                document.getElementById('state').required = false;
-                document.getElementById('postalCode').required = false;
-            }
-        });
-    }
-    
-    // Update state label based on country
-    if (country) {
-        country.addEventListener('change', function() {
-            if (this.value === 'US') {
-                stateLabel.textContent = 'State *';
-            } else if (this.value === 'CA') {
-                stateLabel.textContent = 'Province *';
-            } else {
-                stateLabel.textContent = 'State/Province *';
-            }
-        });
-    }
-    
-    // Handle form submission for Stripe checkout (keep for future)
-    if (checkoutForm) {
-        checkoutForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const customerInfo = {
-                name: document.getElementById('customerName').value,
-                email: document.getElementById('customerEmail').value,
-                deliveryMethod: document.getElementById('deliveryMethod').value
-            };
-            
-            if (customerInfo.deliveryMethod === 'delivery') {
-                customerInfo.shipping = {
-                    street: document.getElementById('street').value,
-                    city: document.getElementById('city').value,
-                    state: document.getElementById('state').value,
-                    postalCode: document.getElementById('postalCode').value,
-                    country: document.getElementById('country').value
-                };
-            }
-            
-            initiateCheckout(customerInfo);
-        });
-    }
-}
+// ============================================
+// DEBUG HELPERS (call from the browser console)
+// ============================================
 
-
-// Helper functions for debugging (can be called from browser console)
-window.viewCart = function() {
-    console.log('Current cart:', cart);
-    console.log('LocalStorage cart:', localStorage.getItem('cart'));
-    return cart;
-};
-
-window.clearCart = function() {
-    cart = [];
-    localStorage.removeItem('cart');
-    updateCartCount();
-    if (document.getElementById('cartItems')) {
-        renderCart();
-    }
-    console.log('Cart cleared');
+window.viewCart = () => cart;
+window.clearCart = () => {
+    clearCartStorage();
+    renderCart();
 };
