@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Souls Purpose Gems | Joyeria Artesanal</title>
+    <link rel="stylesheet" href="./../CSS/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo" href="./home.html">Your Souls Purpose Gems</div>
+            <ul class="nav-links">
+                <li><a href="./home.html" data-en="Home" data-es="Inicio">Home</a></li>
+                <li><a href="./about.html" data-en="About" data-es="Nosotros">About</a></li>
+                <li><a href="./services.html" data-en="Services" data-es="Servicios">Services</a></li>
+                <li><a href="./contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
+            </ul>
+            <div class="language-switcher">
+                <button id="langBtn" class="lang-btn">ES</button>
+            </div>
+            <div class="cart-icon-wrapper">
+                <a href="cart.html" class="cart-icon">
+                    🛒
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+            <div class="burger">
+                <div class="line1"></div>
+                <div class="line2"></div>
+                <div class="line3"></div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="products-main">
+        <section class="products-hero">
+            <h1 data-en="Our Products" data-es="Nuestros Productos">Our Products</h1>
+            <p data-en="Discover our carefully curated collection" data-es="Descubre nuestra colección cuidadosamente seleccionada">Discover our carefully curated collection</p>
+        </section>
+
+        <section class="products-grid">
+            <div class="product-card" onclick="window.location.href='bracelets.html'">
+                <div class="product-image">
+                    <img src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600" alt="Bracelets">
+                </div>
+                <div class="product-info">
+                    <h3 data-en="Bracelets" data-es="Pulseras">Bracelets</h3>
+                    <p data-en="Handcrafted bracelets for every style" data-es="Pulseras artesanales para cada estilo">Handcrafted bracelets for every style</p>
+                </div>
+            </div>
+
+            <div class="product-card" onclick="window.location.href='quartz.html'">
+                <div class="product-image">
+                    <img src="https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=600" alt="Quartz">
+                </div>
+                <div class="product-info">
+                    <h3 data-en="Quartz Crystals" data-es="Cuarzos">Quartz Crystals</h3>
+                    <p data-en="Natural healing crystals and stones" data-es="Cristales y piedras naturales de sanación">Natural healing crystals and stones</p>
+                </div>
+            </div>
+
+            <div class="product-card coming-soon">
+                <div class="product-image">
+                    <img src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600" alt="Coming Soon">
+                    <div class="coming-soon-overlay">
+                        <span data-en="Coming Soon" data-es="Próximamente">Coming Soon</span>
+                    </div>
+                </div>
+                <div class="product-info">
+                    <h3 data-en="New Collection" data-es="Nueva Colección">New Collection</h3>
+                    <p data-en="Exciting new products on the way" data-es="Nuevos productos emocionantes en camino">Exciting new products on the way</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Your Soul Purpose Gems. All rights reserved.</p>
+    </footer>
+
+    <script src="./../JS/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart | Your Soul Purpose Gems</title>
+    <link rel="stylesheet" href="./../CSS/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo" href="./home.html">Your Souls Purpose Gems</div>
+            <ul class="nav-links">
+                <li><a href="./home.html" data-en="Home" data-es="Inicio">Home</a></li>
+                <li><a href="./about.html" data-en="About" data-es="Nosotros">About</a></li>
+                <li><a href="./services.html" data-en="Services" data-es="Servicios">Services</a></li>
+                <li><a href="./contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
+            </ul>
+            <div class="language-switcher">
+                <button id="langBtn" class="lang-btn">ES</button>
+            </div>
+            <div class="cart-icon-wrapper">
+                <a href="cart-simple.html" class="cart-icon">
+                    🛒
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+            <div class="burger">
+                <div class="line1"></div>
+                <div class="line2"></div>
+                <div class="line3"></div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="cart-main">
+        <section class="cart-hero">
+            <h1 data-en="Shopping Cart" data-es="Carrito de Compras">Shopping Cart</h1>
+        </section>
+
+        <section class="cart-container">
+            <div id="emptyCart" class="empty-cart">
+                <p data-en="Your cart is empty" data-es="Tu carrito está vacío">Your cart is empty</p>
+                <a href="./services.html" class="continue-shopping" data-en="Continue Shopping" data-es="Continuar Comprando">Continue Shopping</a>
+            </div>
+
+            <div id="cartContent" class="cart-content" style="display: none;">
+                <div class="cart-items" id="cartItems">
+                    <!-- Cart items will be inserted here by JavaScript -->
+                </div>
+
+                <div class="cart-summary">
+                    <h2 data-en="Order Summary" data-es="Resumen del Pedido">Order Summary</h2>
+                    <div class="summary-row">
+                        <span data-en="Subtotal:" data-es="Subtotal:">Subtotal:</span>
+                        <span id="subtotal">$0.00</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span data-en="Total:" data-es="Total:">Total:</span>
+                        <span id="total">$0.00</span>
+                    </div>
+                    
+                    <!-- Customer Information Form -->
+                    <form id="orderForm" class="checkout-form">
+                        <h3 data-en="Your Information" data-es="Tu Información">Your Information</h3>
+                        
+                        <div class="form-group">
+                            <label data-en="Full Name *" data-es="Nombre Completo *">Full Name *</label>
+                            <input type="text" id="customerName" name="customerName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label data-en="Email *" data-es="Correo Electrónico *">Email *</label>
+                            <input type="email" id="customerEmail" name="customerEmail" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label data-en="Phone Number *" data-es="Número de Teléfono *">Phone Number *</label>
+                            <input type="tel" id="customerPhone" name="customerPhone" required placeholder="(778) 555-1234">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label data-en="Delivery Preference *" data-es="Preferencia de Entrega *">Delivery Preference *</label>
+                            <select id="deliveryMethod" name="deliveryMethod" required>
+                                <option value="" data-en="Select..." data-es="Seleccionar...">Select...</option>
+                                <option value="pickup" data-en="Pickup" data-es="Recoger">Pickup</option>
+                                <option value="delivery" data-en="Delivery" data-es="Entrega a Domicilio">Delivery</option>
+                            </select>
+                        </div>
+                        
+                        <div class="payment-notice">
+                            <h4 data-en="Payment Information" data-es="Información de Pago">Payment Information</h4>
+                            <p data-en="No payment is required at this time. We will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery." 
+                               data-es="No se requiere pago en este momento. Te contactaremos por WhatsApp para coordinar el pago (efectivo o e-transfer) y la entrega o recogida.">
+                                No payment is required at this time. We will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery.
+                            </p>
+                        </div>
+                        
+                        <button type="submit" id="submitOrderBtn" class="checkout-btn" data-en="Submit Order Request" data-es="Enviar Solicitud de Pedido">Submit Order Request</button>
+                    </form>
+                    
+                    <a href="./services.html" class="continue-shopping-link" data-en="← Continue Shopping" data-es="← Continuar Comprando">← Continue Shopping</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Your Soul Purpose Gems. All rights reserved.</p>
+    </footer>
+
+    <script src="./../JS/script.js"></script>
+</body>
+</html>
