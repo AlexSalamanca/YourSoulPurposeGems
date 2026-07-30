@@ -69,6 +69,22 @@ npx vercel dev
 This serves the pages and the function together, so `/api/submit-order` works.
 A plain static server will serve the pages but every order submission will fail.
 
+## Layout notes
+
+The fixed header's height lives in one place, the `--header-h` custom property
+in `CSS/style.css`. Every page offsets its content by it and the off-canvas menu
+hangs below it, so change it there rather than reintroducing hardcoded pixel
+values. It is 70px on desktop and 76px at the mobile breakpoint, where controls
+grow to 44px touch targets.
+
+A page whose content starts straight after the header — with no `.hero` to
+provide the offset — needs `class="page-main"` on its `<main>`, or the first
+heading will sit behind the header.
+
+The brand in the header is the only flex item allowed to shrink. It scales via
+`clamp()` and truncates as a last resort so the burger menu can never be pushed
+off-screen on a narrow phone.
+
 ## Adding or repricing a product
 
 Two places, and they must agree:
@@ -88,6 +104,8 @@ unverified.
 - Descriptions are missing for the first three bracelets on `bracelets.html`
   (the `data-en` / `data-es` copy needs writing).
 - Products 4–6 on both listing pages are still Unsplash stock photos with
-  placeholder copy.
+  placeholder copy. These hotlink to unsplash.com and do rot — one
+  (`photo-1603731096203`) had already 404'd and was swapped out. Replacing them
+  with real photos in `Images/` removes the dependency entirely.
 - The nav header is copy-pasted into all eight pages. It has already drifted
   once; consider a small build step or a shared include if it keeps growing.
