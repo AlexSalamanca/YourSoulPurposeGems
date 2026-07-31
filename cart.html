@@ -9,7 +9,7 @@
 <body>
     <header>
         <nav>
-            <div class="logo" href="./index.html">Your Souls Purpose Gems</div>
+            <a class="logo" href="./index.html">Your Soul Purpose Gems</a>
             <ul class="nav-links">
                 <li><a href="./index.html" data-en="Home" data-es="Inicio">Home</a></li>
                 <li><a href="./about.html" data-en="About" data-es="Nosotros">About</a></li>
@@ -20,7 +20,7 @@
                 <button id="langBtn" class="lang-btn">ES</button>
             </div>
             <div class="cart-icon-wrapper">
-                <a href="cart-simple.html" class="cart-icon">
+                <a href="./cart.html" class="cart-icon">
                     🛒
                     <span class="cart-count">0</span>
                 </a>
@@ -55,6 +55,9 @@
                         <span data-en="Subtotal:" data-es="Subtotal:">Subtotal:</span>
                         <span id="subtotal">$0.00</span>
                     </div>
+                    <!-- Tax rows are inserted here by renderCart(), one per rate
+                         configured in lib/tax.js. -->
+                    <div id="taxRows"></div>
                     <div class="summary-row total">
                         <span data-en="Total:" data-es="Total:">Total:</span>
                         <span id="total">$0.00</span>
@@ -90,9 +93,9 @@
                         
                         <div class="payment-notice">
                             <h4 data-en="Payment Information" data-es="Información de Pago">Payment Information</h4>
-                            <p data-en="No payment is required at this time. We will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery." 
-                               data-es="No se requiere pago en este momento. Te contactaremos por WhatsApp para coordinar el pago (efectivo o e-transfer) y la entrega o recogida.">
-                                No payment is required at this time. We will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery.
+                            <p data-en="Prices include BC sales tax as shown above. No payment is required at this time — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery."
+                               data-es="Los precios incluyen los impuestos de BC como se muestra arriba. No se requiere pago en este momento — te contactaremos por WhatsApp para coordinar el pago (efectivo o e-transfer) y la entrega o recogida.">
+                                Prices include BC sales tax as shown above. No payment is required at this time — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery.
                             </p>
                         </div>
                         
@@ -109,6 +112,8 @@
         <p>&copy; 2026 Your Soul Purpose Gems. All rights reserved.</p>
     </footer>
 
+    <!-- tax.js must load before script.js, which reads window.TAX. -->
+    <script src="./lib/tax.js"></script>
     <script src="./JS/script.js"></script>
 </body>
 </html>

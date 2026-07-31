@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Soul Purpose Gems | Joyeria Artesanal</title>
+    <title>Quartz Crystals | Your Soul Purpose Gems</title>
     <link rel="stylesheet" href="./CSS/style.css">
 </head>
 <body>
     <header>
         <nav>
-            <div class="logo" href="./index.html">Your Soul Purpose Gems</div>
+            <a class="logo" href="./index.html">Your Soul Purpose Gems</a>
             <ul class="nav-links">
                 <li><a href="./index.html" data-en="Home" data-es="Inicio">Home</a></li>
                 <li><a href="./about.html" data-en="About" data-es="Nosotros">About</a></li>
@@ -20,7 +20,7 @@
                 <button id="langBtn" class="lang-btn">ES</button>
             </div>
             <div class="cart-icon-wrapper">
-                <a href="cart.html" class="cart-icon">
+                <a href="./cart.html" class="cart-icon">
                     🛒
                     <span class="cart-count">0</span>
                 </a>
@@ -35,7 +35,7 @@
 
     <main class="product-detail-main">
         <div class="back-button">
-            <a href="products.html" data-en="← Back to Products" data-es="← Volver a Productos">← Back to Products</a>
+            <a href="./services.html" data-en="← Back to Products" data-es="← Volver a Productos">← Back to Products</a>
         </div>
 
         <section class="product-detail-hero">
@@ -46,18 +46,21 @@
         <section class="items-grid">
             <div class="item-card">
                 <div class="item-image">
-                    <img src="https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400" alt="Clear Quartz">
+                    <img src="./Images/OjoTigre.jpeg" alt="Tiger's Eye">
                 </div>
                 <div class="item-details">
-                    <h3 data-en="Clear Quartz Point" data-es="Punta de Cuarzo Transparente">Clear Quartz Point</h3>
-                    <p class="item-price">$49.99</p>
-                    <p class="item-description" data-en="Master healer and energy amplifier" data-es="Sanador maestro y amplificador de energía">Master healer and energy amplifier</p>
-                    <button class="add-to-cart" 
-                            data-id="quartz-1" 
-                            data-name="Clear Quartz Point" 
-                            data-name-es="Punta de Cuarzo Transparente"
-                            data-price="49.99" 
-                            data-image="https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400">
+                    <h3 data-en="Small Tiger's Eye" data-es="Ojo de Tigre Pequeño">Small Tiger's Eye</h3>
+                    <!-- TODO: placeholder price — confirm and keep in sync with lib/catalog.js -->
+                    <p class="item-price">$12.00</p>
+                    <p class="item-description"
+                       data-en="Polished tiger's eye, a stone of courage and grounding."
+                       data-es="Ojo de tigre pulido, una piedra de valentía y conexión a tierra.">Polished tiger's eye, a stone of courage and grounding.</p>
+                    <button class="add-to-cart"
+                            data-id="quartz-1"
+                            data-name="Tiger's Eye"
+                            data-name-es="Ojo de Tigre"
+                            data-price="12.00"
+                            data-image="./Images/OjoTigre.jpeg">
                         <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
                     </button>
                 </div>
@@ -65,18 +68,21 @@
 
             <div class="item-card">
                 <div class="item-image">
-                    <img src="https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?w=400" alt="Rose Quartz">
+                    <img src="./Images/OjoTigreCorazon.jpeg" alt="Tiger's Eye Heart">
                 </div>
                 <div class="item-details">
-                    <h3 data-en="Rose Quartz Heart" data-es="Corazón de Cuarzo Rosa">Rose Quartz Heart</h3>
-                    <p class="item-price">$39.99</p>
-                    <p class="item-description" data-en="Stone of unconditional love and peace" data-es="Piedra del amor incondicional y paz">Stone of unconditional love and peace</p>
-                    <button class="add-to-cart" 
-                            data-id="quartz-2" 
-                            data-name="Rose Quartz Heart" 
-                            data-name-es="Corazón de Cuarzo Rosa"
-                            data-price="39.99" 
-                            data-image="https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?w=400">
+                    <h3 data-en="Small Tiger's Eye Heart" data-es="Corazón de Ojo de Tigre Pequeño">Small Tiger's Eye Heart</h3>
+                    <!-- TODO: placeholder price — confirm and keep in sync with lib/catalog.js -->
+                    <p class="item-price">$10.00</p>
+                    <p class="item-description"
+                       data-en="Hand-carved tiger's eye heart for courage and confidence."
+                       data-es="Corazón de ojo de tigre tallado a mano para la valentía y la confianza.">Hand-carved tiger's eye heart for courage and confidence.</p>
+                    <button class="add-to-cart"
+                            data-id="quartz-2"
+                            data-name="Tiger's Eye Heart"
+                            data-name-es="Corazón de Ojo de Tigre"
+                            data-price="10.00"
+                            data-image="./Images/OjoTigreCorazon.jpeg">
                         <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
                     </button>
                 </div>
@@ -84,79 +90,96 @@
 
             <div class="item-card">
                 <div class="item-image">
-                    <img src="https://images.unsplash.com/photo-1603731096203-7edc6b5c0f7d?w=400" alt="Amethyst">
+                    <img src="./Images/QuarzoRosa.jpeg" alt="Rose Quartz">
                 </div>
                 <div class="item-details">
-                    <h3 data-en="Amethyst Cluster" data-es="Racimo de Amatista">Amethyst Cluster</h3>
-                    <p class="item-price">$69.99</p>
-                    <p class="item-description" data-en="Promotes calmness and spiritual awareness" data-es="Promueve la calma y la conciencia espiritual">Promotes calmness and spiritual awareness</p>
-                    <button class="add-to-cart" 
-                            data-id="quartz-3" 
-                            data-name="Amethyst Cluster" 
-                            data-name-es="Racimo de Amatista"
-                            data-price="69.99" 
-                            data-image="https://images.unsplash.com/photo-1603731096203-7edc6b5c0f7d?w=400">
+                    <h3 data-en="Medium Rose Quartz" data-es="Cuarzo Rosa Mediano">Medium Rose Quartz</h3>
+                    <!-- TODO: placeholder price — confirm and keep in sync with lib/catalog.js -->
+                    <p class="item-price">$18.00</p>
+                    <p class="item-description"
+                       data-en="Raw rose quartz, the stone of unconditional love and peace."
+                       data-es="Cuarzo rosa en bruto, la piedra del amor incondicional y la paz.">Raw rose quartz, the stone of unconditional love and peace.</p>
+                    <button class="add-to-cart"
+                            data-id="quartz-3"
+                            data-name="Rose Quartz"
+                            data-name-es="Cuarzo Rosa"
+                            data-price="18.00"
+                            data-image="./Images/QuarzoRosa.jpeg">
+                        <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ids continue at quartz-7, not quartz-4. quartz-4 to quartz-6 belong
+                 to the three products pulled from this page and are still live in
+                 lib/catalog.js; reusing those ids would make an old cart resolve to
+                 the wrong product at the wrong price. -->
+            <div class="item-card">
+                <div class="item-image item-image-full">
+                    <img src="./Images/AmatistaSmall.jpeg" alt="Small Amethyst Pieces">
+                </div>
+                <div class="item-details">
+                    <h3 data-en="Small Amethyst Pieces" data-es="Piezas Pequeñas de Amatista">Small Amethyst Pieces</h3>
+                    <!-- TODO: placeholder price — confirm and keep in sync with lib/catalog.js -->
+                    <p class="item-price">$12.00</p>
+                    <p class="item-description"
+                       data-en="Small amethyst hearts and points for calm and clarity."
+                       data-es="Pequeños corazones y puntas de amatista para la calma y la claridad.">Small amethyst hearts and points for calm and clarity.</p>
+                    <button class="add-to-cart"
+                            data-id="quartz-7"
+                            data-name="Small Amethyst Pieces"
+                            data-name-es="Piezas Pequeñas de Amatista"
+                            data-price="12.00"
+                            data-image="./Images/AmatistaSmall.jpeg">
                         <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
                     </button>
                 </div>
             </div>
 
             <div class="item-card">
-                <div class="item-image">
-                    <img src="https://images.unsplash.com/photo-1612528443702-f6741f70a049?w=400" alt="Smoky Quartz">
+                <div class="item-image item-image-full">
+                    <img src="./Images/AmatistaEsfera.jpeg" alt="Amethyst Sphere">
                 </div>
                 <div class="item-details">
-                    <h3 data-en="Smoky Quartz Tower" data-es="Torre de Cuarzo Ahumado">Smoky Quartz Tower</h3>
-                    <p class="item-price">$54.99</p>
-                    <p class="item-description" data-en="Grounding and protective energy" data-es="Energía protectora y de conexión a tierra">Grounding and protective energy</p>
-                    <button class="add-to-cart" 
-                            data-id="quartz-4" 
-                            data-name="Smoky Quartz Tower" 
-                            data-name-es="Torre de Cuarzo Ahumado"
-                            data-price="54.99" 
-                            data-image="https://images.unsplash.com/photo-1612528443702-f6741f70a049?w=400">
+                    <h3 data-en="Amethyst Sphere" data-es="Esfera de Amatista">Amethyst Sphere</h3>
+                    <!-- TODO: placeholder price — confirm and keep in sync with lib/catalog.js -->
+                    <p class="item-price">$18.00</p>
+                    <p class="item-description"
+                       data-en="Polished amethyst sphere for calm and balance."
+                       data-es="Esfera de amatista pulida para la calma y el equilibrio.">Polished amethyst sphere for calm and balance.</p>
+                    <button class="add-to-cart"
+                            data-id="quartz-8"
+                            data-name="Amethyst Sphere"
+                            data-name-es="Esfera de Amatista"
+                            data-price="18.00"
+                            data-image="./Images/AmatistaEsfera.jpeg">
                         <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
                     </button>
                 </div>
             </div>
 
             <div class="item-card">
-                <div class="item-image">
-                    <img src="https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400" alt="Citrine">
+                <div class="item-image item-image-full">
+                    <img src="./Images/Citrino.jpeg" alt="Raw Citrine">
                 </div>
                 <div class="item-details">
-                    <h3 data-en="Citrine Crystal" data-es="Cristal de Citrino">Citrine Crystal</h3>
-                    <p class="item-price">$59.99</p>
-                    <p class="item-description" data-en="Attracts abundance and prosperity" data-es="Atrae abundancia y prosperidad">Attracts abundance and prosperity</p>
-                    <button class="add-to-cart" 
-                            data-id="quartz-5" 
-                            data-name="Citrine Crystal" 
-                            data-name-es="Cristal de Citrino"
-                            data-price="59.99" 
-                            data-image="https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400">
+                    <h3 data-en="Small Raw Citrine" data-es="Citrino en Bruto Pequeño">Small Raw Citrine</h3>
+                    <!-- TODO: placeholder price — confirm and keep in sync with lib/catalog.js -->
+                    <p class="item-price">$12.00</p>
+                    <p class="item-description"
+                       data-en="Raw citrine points, the stone of abundance and prosperity."
+                       data-es="Puntas de citrino en bruto, la piedra de la abundancia y la prosperidad.">Raw citrine points, the stone of abundance and prosperity.</p>
+                    <button class="add-to-cart"
+                            data-id="quartz-9"
+                            data-name="Raw Citrine"
+                            data-name-es="Citrino en Bruto"
+                            data-price="12.00"
+                            data-image="./Images/Citrino.jpeg">
                         <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
                     </button>
                 </div>
             </div>
 
-            <div class="item-card">
-                <div class="item-image">
-                    <img src="https://images.unsplash.com/photo-1574169208507-84376144848b?w=400" alt="Mixed Crystals">
-                </div>
-                <div class="item-details">
-                    <h3 data-en="Crystal Healing Set" data-es="Set de Cristales Sanadores">Crystal Healing Set</h3>
-                    <p class="item-price">$89.99</p>
-                    <p class="item-description" data-en="Complete set of 7 chakra stones" data-es="Set completo de 7 piedras de chakra">Complete set of 7 chakra stones</p>
-                    <button class="add-to-cart" 
-                            data-id="quartz-6" 
-                            data-name="Crystal Healing Set" 
-                            data-name-es="Set de Cristales Sanadores"
-                            data-price="89.99" 
-                            data-image="https://images.unsplash.com/photo-1574169208507-84376144848b?w=400">
-                        <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
-                    </button>
-                </div>
-            </div>
         </section>
     </main>
 
