@@ -20,7 +20,7 @@ const DEFAULT_TO = 'yoursoulpurposegems@gmail.com';
 // onboarding@resend.dev works without domain verification but can only deliver
 // to the address that owns the Resend account. Swap in orders@<your-domain>
 // via ORDER_EMAIL_FROM once the domain is verified.
-const DEFAULT_FROM = 'Your Soul Purpose Gems <onboarding@resend.dev>';
+const DEFAULT_FROM = 'Your Soul Purpose Gems <orders@yoursoulpurposegems.com>';
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
