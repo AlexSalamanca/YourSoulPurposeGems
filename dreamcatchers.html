@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dreamcatchers | Your Soul Purpose Gems</title>
+    <meta name="description" content="Handmade dreamcatchers with amethyst, crafted for protection and calm.">
+    <link rel="stylesheet" href="./CSS/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a class="logo" href="./index.html">Your Soul Purpose Gems</a>
+            <ul class="nav-links">
+                <li><a href="./index.html" data-en="Home" data-es="Inicio">Home</a></li>
+                <li><a href="./about.html" data-en="About" data-es="Nosotros">About</a></li>
+                <li><a href="./services.html" data-en="Services" data-es="Servicios">Services</a></li>
+                <li><a href="./contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
+            </ul>
+            <div class="language-switcher">
+                <button id="langBtn" class="lang-btn">ES</button>
+            </div>
+            <div class="cart-icon-wrapper">
+                <a href="./cart.html" class="cart-icon">
+                    🛒
+                    <span class="cart-count">0</span>
+                </a>
+            </div>
+            <div class="burger">
+                <div class="line1"></div>
+                <div class="line2"></div>
+                <div class="line3"></div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="product-detail-main">
+        <div class="back-button">
+            <a href="./services.html" data-en="← Back to Products" data-es="← Volver a Productos">← Back to Products</a>
+        </div>
+
+        <section class="product-detail-hero">
+            <h1 data-en="Dreamcatchers Collection" data-es="Colección de Atrapasueños">Dreamcatchers Collection</h1>
+            <p data-en="Handmade with intention to protect your rest" data-es="Hechos a mano con intención para proteger tu descanso">Handmade with intention to protect your rest</p>
+        </section>
+
+        <!-- items-grid-contain centres a single card and shows the whole piece
+             instead of cropping this portrait photo to a letterbox. -->
+        <section class="items-grid items-grid-contain">
+            <div class="item-card">
+                <div class="item-image">
+                    <img src="./Images/Dreamcatcher.png" alt="Amethyst Protection Dreamcatcher">
+                </div>
+                <div class="item-details">
+                    <h3 data-en="Dreamcatcher Protection – Amethyst" data-es="Atrapasueños Protección – Amatista">Dreamcatcher Protection – Amethyst</h3>
+                    <!-- TODO: confirm the real price. 45.00 is a placeholder and
+                         must match lib/catalog.js, which is what the order email
+                         charges from. -->
+                    <p class="item-price">$45.00</p>
+                    <p class="item-description"
+                       data-en="Handmade with amethysts, a stone known for protection and calm."
+                       data-es="Hecho a mano con amatistas, una piedra conocida por la protección y la calma.">Handmade with amethysts, a stone known for protection and calm.</p>
+                    <button class="add-to-cart"
+                            data-id="dreamcatcher-1"
+                            data-name="Dreamcatcher Protection – Amethyst"
+                            data-name-es="Atrapasueños Protección – Amatista"
+                            data-price="45.00"
+                            data-image="./Images/Dreamcatcher.png">
+                        <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Your Soul Purpose Gems. All rights reserved.</p>
+    </footer>
+
+    <script src="./JS/script.js"></script>
+</body>
+</html>

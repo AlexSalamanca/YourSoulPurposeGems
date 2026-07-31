@@ -293,6 +293,12 @@ nav {
 
 /* Main Content */
 main {
+    /* width: 100% matters. body is a flex column, and an auto margin on the
+       cross axis cancels align-items: stretch — so without an explicit width
+       main shrink-wraps its content instead of filling max-width. A page with
+       one product collapsed to ~600px, and auto-fit grids resolved against an
+       indefinite width and put every item on a single row. */
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 4rem 2rem;
@@ -373,7 +379,10 @@ footer {
     margin: 4rem auto;
     padding: 0 2rem;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    /* 2x2 for the four categories. A 3-column grid left the fourth card alone
+       on its own row, which reads as a mistake. Switch back to repeat(3, 1fr)
+       if a 5th and 6th category arrive and fill two rows properly. */
+    grid-template-columns: repeat(2, 1fr);
     gap: 3rem;
 }
 
@@ -391,6 +400,11 @@ footer {
     box-shadow: 0 15px 40px rgba(0,0,0,0.2);
 }
 
+/* Coming-soon cards are not clickable, so don't promise a click. */
+.product-card.coming-soon {
+    cursor: default;
+}
+
 .product-image {
     width: 100%;
     height: 300px;
@@ -402,12 +416,25 @@ footer {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* Per-photo focal point. These are tall shots where the product rarely sits
+       dead centre, so a plain centre crop misses it — it showed the river above
+       the bracelets and the wicker heart below the rose quartz. Set --focal-y on
+       the .product-image of any card whose subject sits high or low; smaller
+       values crop towards the top of the photo, larger towards the bottom. */
+    object-position: center var(--focal-y, 50%);
     transition: transform 0.3s;
 }
 
 .product-card:hover .product-image img {
     transform: scale(1.1);
 }
+
+/* Note: the category cards deliberately use cover with a tuned --focal-y rather
+   than object-fit: contain. Contain fitted these portrait photos into a 512x300
+   landscape card and left the product about 225px wide with wide empty margins —
+   fully visible but far too small to read. Cropping to the subject fills the
+   card. The product detail pages still use contain via .items-grid-contain,
+   where the cards are narrow and the whole piece should show. */
 
 .coming-soon-overlay {
     position: absolute;
@@ -491,6 +518,35 @@ footer {
     gap: 2.5rem;
 }
 
+/* Product grid that shows each item whole instead of cropping it. Use where the
+   photos are portrait or of mixed orientation — the default 250px cover crop
+   reduces a hanging piece to a horizontal slice. 380px suits both a tall
+   dreamcatcher and a 4:3 tray shot without much letterboxing either way.
+   The track max is 1fr rather than a fixed width on purpose: auto-fit counts
+   repetitions using a definite max, so minmax(280px, 360px) allowed only two
+   per row on desktop and one on a tablet. Capping the card instead keeps the
+   count responsive — 3 across on desktop, 2 on a tablet, 1 on a phone — while a
+   lone card stays a sensible width and centred rather than stranded in the
+   first of three columns. */
+.items-grid-contain {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.items-grid-contain .item-card {
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+}
+
+.items-grid-contain .item-image {
+    height: 380px;
+    background: #f7f5f3;
+}
+
+.items-grid-contain .item-image img {
+    object-fit: contain;
+}
+
 .item-card {
     background: white;
     border-radius: 12px;
@@ -514,6 +570,24 @@ footer {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* Same per-photo focal point as the category cards — set --focal-y on the
+       .item-image when a product photo's subject sits high or low in frame. */
+    object-position: center var(--focal-y, 50%);
+}
+
+/* For a photo of several small pieces laid out down a tray. Cropping that to the
+   default 250px landscape band cuts pieces off at both ends, so show the whole
+   shot in a taller box instead. Applied per item, not per grid: the single-stone
+   photos on the same page look better cropped, where the stone fills the card.
+   Keep items sharing a grid row on the same setting, or that row will have one
+   card with dead space under its image. */
+.item-image-full {
+    height: 340px;
+    background: #f7f5f3;
+}
+
+.item-image-full img {
+    object-fit: contain;
 }
 
 .item-details {
@@ -1074,6 +1148,18 @@ footer {
         padding: 2rem 1rem;
     }
 
+    /* main already supplies the 1rem gutter here, so drop the grid's own 2rem
+       and tighten the gap — otherwise the two columns in the 601-768 range are
+       squeezed into tall, narrow cards. */
+    .products-grid {
+        padding: 0;
+        gap: 1.5rem;
+    }
+
+    .product-image {
+        height: 240px;
+    }
+
     /* Duplicated from the pointer:coarse block below so the sizes also apply on
        any narrow viewport, including desktop browsers resized for testing. */
     .qty-btn {
@@ -1137,11 +1223,6 @@ footer {
         font-size: 1.5rem;
     }
 
-    .products-grid {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-
     .products-hero h1 {
         font-size: 2rem;
     }
@@ -1179,7 +1260,8 @@ footer {
        stack into 2rem of gutter again. */
     .cart-container,
     .products-hero,
-    .product-detail-hero {
+    .product-detail-hero,
+    .products-grid {
         padding-left: 0;
         padding-right: 0;
     }
@@ -1190,6 +1272,20 @@ footer {
 
     .cart-summary {
         padding: 1.25rem;
+    }
+}
+
+/* The category grid goes single-column here rather than at 480px. Holding two
+   columns down to 480 squeezed each card to ~161px against a 300px-tall image,
+   which looked broken. */
+@media screen and (max-width: 600px) {
+    .products-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .product-image {
+        height: 200px;
     }
 }
 

@@ -269,9 +269,46 @@ function updateCartSummary() {
 
     if (!subtotalElement || !totalElement) return;
 
+    const totals = cartTotals();
+    subtotalElement.textContent = money(totals.subtotal);
+    totalElement.textContent = money(totals.total);
+
+    const taxRows = document.getElementById('taxRows');
+    if (!taxRows) return;
+
+    // One row per configured tax. Rebuilt rather than patched so switching a
+    // rate off in lib/tax.js removes its row instead of leaving a stale $0.00.
+    const fragment = document.createDocumentFragment();
+    totals.taxes.forEach(tax => {
+        const row = document.createElement('div');
+        row.className = 'summary-row';
+
+        // Trailing colon added here, not stored in the label, because the order
+        // email appends its own.
+        const label = document.createElement('span');
+        label.setAttribute('data-en', `${tax.labelEn}:`);
+        label.setAttribute('data-es', `${tax.labelEs}:`);
+        label.textContent = `${currentLang === 'es' ? tax.labelEs : tax.labelEn}:`;
+
+        const amount = document.createElement('span');
+        amount.textContent = money(tax.amount);
+
+        row.append(label, amount);
+        fragment.appendChild(row);
+    });
+    taxRows.replaceChildren(fragment);
+}
+
+// Single source of truth for the arithmetic: lib/tax.js is also what the order
+// API uses, so the cart and the email can't drift apart. If tax.js failed to
+// load, fall back to an untaxed subtotal rather than showing nothing.
+function cartTotals() {
+    if (typeof TAX !== 'undefined' && TAX && typeof TAX.calculate === 'function') {
+        return TAX.calculate(cart);
+    }
+    console.warn('lib/tax.js did not load — showing an untaxed total.');
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    subtotalElement.textContent = money(subtotal);
-    totalElement.textContent = money(subtotal);
+    return { subtotal, taxes: [], taxTotal: 0, total: subtotal };
 }
 
 // ============================================

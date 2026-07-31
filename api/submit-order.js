@@ -12,6 +12,7 @@
 
 const { Resend } = require('resend');
 const { CATALOG } = require('../lib/catalog');
+const TAX = require('../lib/tax');
 
 const MAX_ITEMS = 50;
 const MAX_QUANTITY = 99;
@@ -49,12 +50,14 @@ module.exports = async (req, res) => {
         }
 
         const { items, customerInfo } = validation;
-        const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        // Recomputed here from catalog prices via the same module the cart page
+        // uses, so the emailed total always matches what the customer was shown.
+        const totals = TAX.calculate(items);
         const orderNumber = `YSPG-${Date.now()}`;
         const placedAt = new Date().toLocaleString('en-CA', { timeZone: 'America/Vancouver' });
 
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const payload = { orderNumber, placedAt, customerInfo, items, subtotal };
+        const payload = { orderNumber, placedAt, customerInfo, items, totals };
 
         const { error } = await resend.emails.send({
             from: process.env.ORDER_EMAIL_FROM || DEFAULT_FROM,
@@ -177,7 +180,7 @@ function money(amount) {
     return `$${amount.toFixed(2)}`;
 }
 
-function renderOrderHtml({ orderNumber, placedAt, customerInfo, items, subtotal }) {
+function renderOrderHtml({ orderNumber, placedAt, customerInfo, items, totals }) {
     const hasUnverified = items.some(item => !item.verified);
 
     const rows = items.map(item => `
@@ -228,9 +231,18 @@ function renderOrderHtml({ orderNumber, placedAt, customerInfo, items, subtotal 
                 </thead>
                 <tbody>
                     ${rows}
+                    <tr>
+                        <td colspan="3" style="padding:10px 15px;text-align:right;">Subtotal:</td>
+                        <td style="padding:10px 15px;text-align:right;">${money(totals.subtotal)}</td>
+                    </tr>
+                    ${totals.taxes.map(tax => `
+                    <tr>
+                        <td colspan="3" style="padding:10px 15px;text-align:right;">${esc(tax.labelEn)}:</td>
+                        <td style="padding:10px 15px;text-align:right;">${money(tax.amount)}</td>
+                    </tr>`).join('')}
                     <tr style="font-weight:bold;background:#f0f0f0;">
                         <td colspan="3" style="padding:15px;text-align:right;">TOTAL:</td>
-                        <td style="padding:15px;text-align:right;">${money(subtotal)}</td>
+                        <td style="padding:15px;text-align:right;">${money(totals.total)}</td>
                     </tr>
                 </tbody>
             </table>
@@ -255,10 +267,12 @@ function renderOrderHtml({ orderNumber, placedAt, customerInfo, items, subtotal 
 </html>`;
 }
 
-function renderOrderText({ orderNumber, placedAt, customerInfo, items, subtotal }) {
+function renderOrderText({ orderNumber, placedAt, customerInfo, items, totals }) {
     const lines = items.map(item =>
         `  ${item.quantity} x ${item.name} @ ${money(item.price)} = ${money(item.price * item.quantity)}${item.verified ? '' : '  [unverified price]'}`
     );
+
+    const pad = label => `${label}:`.padEnd(12);
 
     return [
         'NEW ORDER REQUEST',
@@ -278,7 +292,9 @@ function renderOrderText({ orderNumber, placedAt, customerInfo, items, subtotal 
         '-----',
         ...lines,
         '',
-        `TOTAL: ${money(subtotal)}`,
+        `  ${pad('Subtotal')}${money(totals.subtotal)}`,
+        ...totals.taxes.map(tax => `  ${pad(tax.labelEn)}${money(tax.amount)}`),
+        `  ${pad('TOTAL')}${money(totals.total)}`,
         '',
         'No payment was taken. Contact the customer to arrange payment and handover.'
     ].join('\n');
