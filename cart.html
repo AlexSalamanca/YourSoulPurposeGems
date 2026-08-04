@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopping Cart | Your Soul Purpose Gems</title>
+    <meta name="description" content="Review your order and send us a request. No payment is taken online — we get in touch to arrange payment and delivery.">
+    <link rel="icon" href="./Images/logo.jpeg">
+    <link rel="apple-touch-icon" href="./Images/logo.jpeg">
     <link rel="stylesheet" href="./CSS/style.css">
 </head>
 <body>
+<!-- header:start — generated from partials/header.html by tools/sync-header.js. Edit the partial, not this. -->
     <header>
         <nav>
             <a class="logo" href="./index.html">Your Soul Purpose Gems</a>
@@ -32,6 +36,7 @@
             </div>
         </nav>
     </header>
+<!-- header:end -->
 
     <main class="cart-main">
         <section class="cart-hero">
@@ -56,7 +61,7 @@
                         <span id="subtotal">$0.00</span>
                     </div>
                     <!-- Tax rows are inserted here by renderCart(), one per rate
-                         configured in lib/tax.js. -->
+                         configured in JS/tax.js. -->
                     <div id="taxRows"></div>
                     <div class="summary-row total">
                         <span data-en="Total:" data-es="Total:">Total:</span>
@@ -99,6 +104,15 @@
                             </p>
                         </div>
                         
+                        <!-- Honeypot. Hidden from people, but bots that fill every
+                             field will complete it, and the API rejects any order
+                             that arrives with it set. Not a label a real customer
+                             ever sees, so leave it out of the language switcher. -->
+                        <div class="visually-hidden" aria-hidden="true">
+                            <label for="website">Website</label>
+                            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                        </div>
+
                         <button type="submit" id="submitOrderBtn" class="checkout-btn" data-en="Submit Order Request" data-es="Enviar Solicitud de Pedido">Submit Order Request</button>
                     </form>
                     
@@ -113,7 +127,9 @@
     </footer>
 
     <!-- tax.js must load before script.js, which reads window.TAX. -->
-    <script src="./lib/tax.js"></script>
+    <script src="./JS/tax.js"></script>
+    <!-- catalog.js must load before script.js, which reads window.CATALOG. -->
+    <script src="./JS/catalog.js"></script>
     <script src="./JS/script.js"></script>
 </body>
 </html>

@@ -1,0 +1,9 @@
+# Keeps build-time and parked files off the public site. None of these are needed
+# at runtime — api/submit-order.js only requires JS/catalog.js and JS/tax.js, both
+# of which stay.
+#
+# If a deploy ever 404s on something unexpected, check here first.
+
+tools/
+partials/
+future-payments/

@@ -876,6 +876,18 @@ footer {
     margin-bottom: 1rem;
 }
 
+/* Hides the honeypot field from sight without display:none, which some bots
+   detect and skip. Screen readers skip it via aria-hidden on the wrapper. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;

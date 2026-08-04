@@ -27,7 +27,7 @@ functions were never routed — and one was misnamed
 ## Known issues to fix before shipping these
 
 - `create-checkout-session.js` trusts client-supplied prices. Resolve line
-  items against `lib/catalog.js` instead, the same way `api/submit-order.js`
+  items against `JS/catalog.js` instead, the same way `api/submit-order.js`
   does, or a customer can pay whatever they like.
 - `webhook.js` builds its raw body by concatenating chunks into a string. That
   corrupts multi-byte characters and breaks signature verification; buffer the

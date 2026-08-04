@@ -2,8 +2,8 @@
 // customer and the order email can never disagree on the arithmetic.
 //
 // Loaded two ways from this one file:
-//   browser  <script src="./lib/tax.js"></script>   -> window.TAX
-//   node     require('../lib/tax')                  -> module.exports
+//   browser  <script src="./JS/tax.js"></script>    -> window.TAX
+//   node     require('../JS/tax')                   -> module.exports
 //
 // ---------------------------------------------------------------------------
 // IMPORTANT, please confirm with an accountant before going live.

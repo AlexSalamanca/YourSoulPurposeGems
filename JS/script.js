@@ -9,6 +9,9 @@ const MAX_QUANTITY = 99;
 let cart = [];
 let currentLang = 'en';
 
+// Used to tell a human filling in a form from a script posting instantly.
+const pageLoadedAt = Date.now();
+
 // ============================================
 // HELPERS
 // ============================================
@@ -56,8 +59,35 @@ function loadCart() {
         parsed = [];
     }
 
-    cart = (Array.isArray(parsed) ? parsed : []).map(normalizeItem).filter(Boolean);
-    updateCartCount();
+    const normalized = (Array.isArray(parsed) ? parsed : []).map(normalizeItem).filter(Boolean);
+    cart = normalized.map(refreshFromCatalog);
+
+    // Write back only if something actually moved, so a normal page load is not a
+    // storage write. Without this the stored copy would stay stale until some
+    // other action happened to save the cart.
+    const changed = cart.some((item, i) =>
+        item.price !== normalized[i].price ||
+        item.name !== normalized[i].name ||
+        item.nameEs !== normalized[i].nameEs
+    );
+    if (changed) {
+        saveCart();
+    } else {
+        updateCartCount();
+    }
+}
+
+// A cart can sit in localStorage for weeks. Re-resolve each line against the
+// catalog on load so the customer sees today's name and price — and the same
+// ones the order API will bill from. Unknown ids keep what was stored; the API
+// flags those separately in the email.
+function refreshFromCatalog(item) {
+    const entry = catalogEntry(item.id);
+    if (!entry) return item;
+    if (entry.price === item.price && entry.name === item.name && entry.nameEs === item.nameEs) {
+        return item;
+    }
+    return { ...item, name: entry.name, nameEs: entry.nameEs, price: entry.price };
 }
 
 function saveCart() {
@@ -88,18 +118,84 @@ function updateCartCount() {
     });
 }
 
+// JS/catalog.js is the only place a product's name and price are written down.
+// Everything that needs either looks it up here, so they can never be right in
+// one place and stale in another.
+function catalogEntry(id) {
+    if (typeof CATALOG === 'undefined' || !CATALOG || !CATALOG[id]) return null;
+    const entry = CATALOG[id];
+    const price = Number(entry.price);
+    if (!Number.isFinite(price) || price < 0) return null;
+    return {
+        name: typeof entry.name === 'string' && entry.name ? entry.name : id,
+        nameEs: typeof entry.nameEs === 'string' ? entry.nameEs : '',
+        price
+    };
+}
+
+function catalogPrice(id) {
+    return catalogEntry(id)?.price ?? null;
+}
+
+// Fills in the heading and price on each product card from the catalog. The
+// pages ship with neither, so if this cannot run the customer sees a blank card
+// rather than a name or price that disagrees with the order email.
+function renderProductCards() {
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        const id = button.dataset.id;
+        const details = button.closest('.item-details');
+        if (!details) return;
+
+        const heading = details.querySelector('h3');
+        const priceTag = details.querySelector('.item-price');
+        const entry = catalogEntry(id);
+
+        if (!entry) {
+            console.error(`No catalog entry for "${id}" — add one in JS/catalog.js`);
+            if (heading) heading.textContent = '';
+            if (priceTag) priceTag.textContent = '';
+            button.disabled = true;
+            return;
+        }
+
+        if (priceTag) priceTag.textContent = money(entry.price);
+
+        if (heading) {
+            // Written as data-en/data-es so the existing language switcher keeps
+            // working on these headings like any other translated element.
+            heading.setAttribute('data-en', entry.name);
+            heading.setAttribute('data-es', entry.nameEs || entry.name);
+            heading.textContent = (currentLang === 'es' && entry.nameEs) ? entry.nameEs : entry.name;
+        }
+    });
+}
+
 function addToCart(button) {
+    const id = button.dataset.id;
+    const entry = catalogEntry(id);
+
+    if (!entry) {
+        console.error(`Refusing to add "${id}" to the cart: no catalog entry.`);
+        return;
+    }
+
+    // The cart thumbnail is read straight from the photo on the card the customer
+    // just clicked, rather than a data-image attribute repeating the same path.
+    // There is nothing to keep in sync, so the two cannot disagree — they used to,
+    // on bracelet-6.
+    const cardImage = button.closest('.item-card')?.querySelector('.item-image img');
+
     const item = normalizeItem({
-        id: button.dataset.id,
-        name: button.dataset.name,
-        nameEs: button.dataset.nameEs,
-        price: button.dataset.price,
-        image: button.dataset.image,
+        id,
+        name: entry.name,
+        nameEs: entry.nameEs,
+        price: entry.price,
+        image: cardImage?.getAttribute('src') || '',
         quantity: 1
     });
 
     if (!item) {
-        console.error('Add to cart button is missing a valid data-id / data-price', button.dataset);
+        console.error('Add to cart button is missing a valid data-id', button.dataset);
         return;
     }
 
@@ -277,7 +373,7 @@ function updateCartSummary() {
     if (!taxRows) return;
 
     // One row per configured tax. Rebuilt rather than patched so switching a
-    // rate off in lib/tax.js removes its row instead of leaving a stale $0.00.
+    // rate off in JS/tax.js removes its row instead of leaving a stale $0.00.
     const fragment = document.createDocumentFragment();
     totals.taxes.forEach(tax => {
         const row = document.createElement('div');
@@ -299,14 +395,14 @@ function updateCartSummary() {
     taxRows.replaceChildren(fragment);
 }
 
-// Single source of truth for the arithmetic: lib/tax.js is also what the order
+// Single source of truth for the arithmetic: JS/tax.js is also what the order
 // API uses, so the cart and the email can't drift apart. If tax.js failed to
 // load, fall back to an untaxed subtotal rather than showing nothing.
 function cartTotals() {
     if (typeof TAX !== 'undefined' && TAX && typeof TAX.calculate === 'function') {
         return TAX.calculate(cart);
     }
-    console.warn('lib/tax.js did not load — showing an untaxed total.');
+    console.warn('JS/tax.js did not load — showing an untaxed total.');
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     return { subtotal, taxes: [], taxTotal: 0, total: subtotal };
 }
@@ -335,7 +431,13 @@ async function submitOrder(customerInfo) {
         const response = await fetch('/api/submit-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: cart, customerInfo })
+            body: JSON.stringify({
+                items: cart,
+                customerInfo,
+                // Bot signals, both checked server-side. See api/submit-order.js.
+                website: document.getElementById('website')?.value || '',
+                elapsedMs: Date.now() - pageLoadedAt
+            })
         });
 
         const result = await response.json().catch(() => ({}));
@@ -542,6 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSmoothScrolling();
     setupCheckoutForm();
     setupCartInteractions();
+    renderProductCards();
 
     const langBtn = document.getElementById('langBtn');
     if (langBtn) {

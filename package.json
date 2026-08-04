@@ -6,6 +6,10 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "sync-header": "node tools/sync-header.js",
+    "check-header": "node tools/sync-header.js --check"
+  },
   "dependencies": {
     "resend": "^6.18.1"
   }

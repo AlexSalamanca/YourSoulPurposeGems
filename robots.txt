@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Nothing useful to a crawler, and the order endpoint should never be indexed.
+Disallow: /api/
+Disallow: /tools/
+Disallow: /partials/
+Disallow: /future-payments/
+
+# Update the host below once the custom domain is live.
+Sitemap: https://yoursoulpurposegems.com/sitemap.xml

@@ -11,13 +11,13 @@ is planned for a future release (see `future-payments/`).
 2. On `cart.html` they fill in name, email, phone and pickup/delivery, then hit
    **Submit Order Request**.
 3. The browser POSTs the cart to `/api/submit-order`.
-4. That function validates everything, resolves prices from `lib/catalog.js`,
+4. That function validates everything, resolves prices from `JS/catalog.js`,
    and emails the order to the shop owner via [Resend](https://resend.com).
    `Reply-To` is set to the customer, so replying in your inbox reaches them.
 5. The customer is redirected to `success.html?order=YSPG-…`.
 
 Prices are **not** trusted from the browser. Anything the customer sends is
-looked up by `data-id` in `lib/catalog.js`, and that name and price is what goes
+looked up by `data-id` in `JS/catalog.js`, and that name and price is what goes
 in the email. An unknown id still gets through, but is flagged
 `(unverified price)` so you know to check it.
 
@@ -30,9 +30,11 @@ dreamcatchers.html others.html
 cart.html success.html contact.html
 CSS/style.css                            all styling
 JS/script.js                             cart, language switch, nav, slideshow
+JS/catalog.js                            names + prices, shared browser + API
+JS/tax.js                                BC sales tax, shared browser + API
 api/submit-order.js                      the only deployed serverless function
-lib/catalog.js                           server-side prices (source of truth)
-lib/tax.js                               BC sales tax, shared browser + API
+partials/header.html                     the one copy of the site header
+tools/sync-header.js                     copies that header into every page
 future-payments/                         parked Stripe code — NOT deployed
 ```
 
@@ -116,9 +118,60 @@ Contain was tried on the category cards first and was wrong there: fitting a
 portrait photo into a 512x300 landscape card left the product about 225px wide
 with wide empty margins — visible, but too small to read.
 
+## The shared header
+
+The nav is identical on all ten pages, so it lives in `partials/header.html` and
+is copied into each page between `<!-- header:start -->` and `<!-- header:end -->`
+markers.
+
+```bash
+npm run sync-header
+```
+
+Edit the partial, run that, done. To check without writing anything — useful
+before a deploy:
+
+```bash
+npm run check-header
+```
+
+That exits non-zero and names any page whose header has drifted from the partial.
+
+This is a sync script rather than a runtime include on purpose: the nav is the
+site's primary navigation, so it should be in the HTML that ships rather than
+injected by JavaScript, and Vercel still deploys plain static files with no build
+step. The tradeoff is that you have to remember to run it — `npm run check-header`
+is there to catch you when you forget.
+
+Drift here is not hypothetical: it is how `cart.html` ended up linking to a
+`cart-simple.html` that never existed.
+
+## Bot protection on the order form
+
+Two cheap checks, both in `api/submit-order.js`, both dependency-free:
+
+- **Honeypot** — a `website` field hidden from people (`.visually-hidden`, not
+  `display: none`, which bots detect). Bots that fill every field complete it.
+- **Timing** — the form is rejected if it is submitted under `MIN_FILL_MS`
+  (3 seconds) after the page loaded.
+
+Both answer `200` with a plausible order number and send no email. Telling a bot
+why it failed only teaches it what to change. Rejections are logged as
+`Discarded a likely automated submission`, so check the Vercel logs if a real
+customer ever reports a silent failure.
+
+The timing value must be **strictly positive** to count. `Number(null)` is `0`,
+and an earlier `>= 0` check meant a null timing field silently rejected genuine
+orders. A lost order costs far more than a spam email, so every ambiguous case is
+allowed through.
+
+**This is not rate limiting.** It stops drive-by form spam, not a determined
+attacker. Real per-IP throttling needs shared state across serverless invocations
+— Vercel KV or Upstash — which is the remaining piece if abuse ever becomes real.
+
 ## Sales tax
 
-`lib/tax.js` holds the BC rates — GST 5% and PST 7%, each charged on the subtotal
+`JS/tax.js` holds the BC rates — GST 5% and PST 7%, each charged on the subtotal
 rather than compounded. That one file is loaded by both the cart page (as
 `window.TAX`) and `api/submit-order.js` (as a `require`), so what the customer
 sees and what the order email says can never drift apart. All money is handled in
@@ -133,42 +186,71 @@ there is a small-supplier threshold ($30,000 of revenue over four consecutive
 quarters), and PST registration follows different rules. If you are not
 registered for one, set that rate to `0`.
 
-## Adding or repricing a product
+## Renaming or repricing a product
 
-Two places, and they must agree:
+**Change it in `JS/catalog.js`. That is the whole job.**
 
-1. The `.add-to-cart` button in `bracelets.html` or `quartz.html`
-   (`data-id`, `data-name`, `data-name-es`, `data-price`, `data-image`).
-2. The matching entry in `lib/catalog.js`, keyed by the same `data-id`.
+A product's name and price are written down in exactly one place. The pages carry
+neither: each loads `JS/catalog.js` and fills in the card heading and price tag
+from there, keyed by the button's `data-id`. The cart re-resolves both on load, so
+a cart saved before a change shows the new values, and the order API reads the
+same file.
 
-If you skip step 2 the item still orders, but the email marks its price
-unverified.
+Both used to live in three places at once, and both drifted — prices on seven
+products, names on six. A customer could see one price and be billed another, or
+buy a "Small Tiger's Eye" and have the order email say "Tiger's Eye", which is
+exactly the information you need to pack the right item. `data-price`,
+`data-name` and `data-name-es` no longer exist.
 
-Repricing needs **three** edits, not two: the displayed `<p class="item-price">`,
-the button's `data-price`, and `lib/catalog.js`. Changing only the displayed one
-leaves the customer seeing a price different from the one they are charged. This
-has already happened once, on seven products at the same time.
+Spanish names come from `nameEs` and drive the language switcher.
+
+## Adding a product
+
+1. Add an entry to `JS/catalog.js` with a new id, including `nameEs`.
+2. Add a card in the page with a matching `data-id` on its `.add-to-cart` button.
+   Give it an empty `<h3></h3>` and `<p class="item-price"></p>` — both are filled
+   at runtime.
+3. Make sure the page loads `JS/catalog.js` before `JS/script.js`.
+
+A card whose `data-id` has no catalog entry renders blank with its Add to Cart
+button disabled and an explanation in the browser console. A catalog entry with no
+card simply never renders.
+
+One tradeoff: because names and prices are injected at runtime, they are not in
+the raw HTML for crawlers that do not execute JavaScript. Search engines
+generally do run it, and the page `<title>`, meta description and image `alt`
+text still carry the product names. A small build step (see Known gaps) would
+remove the tradeoff entirely.
 
 ## Known gaps
 
-- **Thirteen prices are placeholders**, invented so the cart would work. Confirm
-  each and change it in *both* the page (`data-price` and the displayed
-  `.item-price`) and `lib/catalog.js`:
-  `dreamcatcher-1` $45.00; `other-1` $22.00, `other-2` $12.00, `other-3` $15.00;
-  `bracelet-4` / `bracelet-5` / `bracelet-6` $25.00 each (matched to what the
-  other bracelets sell for); `quartz-1` $12.00, `quartz-2` $15.00,
-  `quartz-3` $18.00, `quartz-7` $10.00, `quartz-8` $28.00, `quartz-9` $14.00.
-- `quartz-4` to `quartz-6` are off the site but still listed in `lib/catalog.js`,
-  which is why the live quartz products are numbered 1-3 and 7-9. Ids are
-  permanent keys, not display order — see the comment in `lib/catalog.js`.
-- `Images/ColagentePuerta.jpeg` is misspelled on disk ("Colagente"). The markup
-  matches the file, so it works — but if the file is ever renamed, update
-  `others.html` too. Vercel serves from a case-sensitive filesystem.
+Nothing below is a code defect. These are decisions, content and infrastructure
+that need a human.
 
-- The endpoint has no rate limiting, so the order form could be used to spam the
-  inbox. Real protection needs either a Vercel KV / Upstash counter or a
-  CAPTCHA on the form.
-- Descriptions are missing for the first three bracelets on `bracelets.html`
-  (the `data-en` / `data-es` copy needs writing).
-- The nav header is copy-pasted into all eight pages. It has already drifted
-  once; consider a small build step or a shared include if it keeps growing.
+- **Confirm every price.** They all live in `JS/catalog.js` and are live as
+  written, taxed at 12%. Several began as placeholders before being set
+  deliberately, so read that file top to bottom once and confirm each figure.
+- **Verify the Resend domain and switch the sender.** Until then order emails go
+  out from `onboarding@resend.dev`, which only delivers to the address that owns
+  the Resend account. Set `ORDER_EMAIL_FROM` once the domain is verified.
+- **Confirm the GST/PST obligation with an accountant.** See the Sales tax
+  section — the rates are right for BC, but whether you must charge them depends
+  on your registrations.
+- **Update the domain in `sitemap.xml` and `robots.txt`.** Both currently assume
+  `yoursoulpurposegems.com`. Resubmit the sitemap in Google Search Console once
+  the real host is live.
+- **Real rate limiting** needs shared state across serverless invocations —
+  Vercel KV or Upstash. The honeypot and timing checks stop drive-by spam only.
+- **`Images/logo2.jpg` is unused**, as is the logo in the header: the brand
+  renders as text while `Images/logo.jpeg` (a full elephant / tree-of-life mark)
+  is used only as the favicon. Worth deciding whether it belongs in the header.
+- **Product names and prices are injected at runtime**, so they are not in the raw
+  HTML for crawlers that do not run JavaScript. Google does run it, and titles,
+  meta descriptions and `alt` text carry the names. A build step would remove the
+  tradeoff and could replace `tools/sync-header.js` at the same time.
+- `quartz-4` to `quartz-6` are off the site but still listed in `JS/catalog.js`,
+  which is why the live quartz products are numbered 1-3 and 7-9. Ids are
+  permanent keys, not display order — see the comment in `JS/catalog.js`.
+- `future-payments/README.md` lists five issues in the parked Stripe code,
+  including one that trusts client-supplied prices and one that breaks webhook
+  signature verification. All out of scope until payments are switched on.

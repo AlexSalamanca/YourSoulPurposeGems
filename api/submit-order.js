@@ -11,11 +11,15 @@
 //   ORDER_EMAIL_FROM verified sender (default: Resend's shared onboarding sender)
 
 const { Resend } = require('resend');
-const { CATALOG } = require('../lib/catalog');
-const TAX = require('../lib/tax');
+const { CATALOG } = require('../JS/catalog');
+const TAX = require('../JS/tax');
 
 const MAX_ITEMS = 50;
 const MAX_QUANTITY = 99;
+// A person needs longer than this to read the cart and type their details. Scripts
+// that POST the moment the page loads do not. Deliberately generous — the cost of
+// a false positive is a lost order.
+const MIN_FILL_MS = 3000;
 const DEFAULT_TO = 'yoursoulpurposegems@gmail.com';
 // onboarding@resend.dev works without domain verification but can only deliver
 // to the address that owns the Resend account. Swap in orders@<your-domain>
@@ -43,6 +47,21 @@ module.exports = async (req, res) => {
     try {
         // Vercel parses JSON bodies for us, but be tolerant of a raw string.
         const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+
+        // Bot checks come before validation so a flood costs us nothing but a 200
+        // and no email. Both answer with success on purpose: telling a bot why it
+        // was rejected just teaches it what to change.
+        if (looksAutomated(body)) {
+            console.warn('Discarded a likely automated submission', {
+                honeypot: !!body.website,
+                elapsedMs: body.elapsedMs
+            });
+            return res.status(200).json({
+                success: true,
+                message: 'Order request submitted successfully',
+                orderNumber: `YSPG-${Date.now()}`
+            });
+        }
 
         const validation = validateOrder(body);
         if (validation.error) {
@@ -90,6 +109,25 @@ module.exports = async (req, res) => {
 // ============================================
 // VALIDATION
 // ============================================
+
+// Cheap, dependency-free bot signals. Neither is real rate limiting — a determined
+// attacker can defeat both — but together they stop the drive-by form spam that
+// makes up almost all of it. Per-IP throttling needs shared state; see the README.
+function looksAutomated(body) {
+    // 1. Honeypot: a field hidden from people that bots fill in anyway.
+    if (typeof body.website === 'string' && body.website.trim() !== '') return true;
+
+    // 2. Timing: submitted faster than a person could fill the form in.
+    //    Must be strictly positive to count as a signal. Number(null) is 0, so
+    //    `>= 0` here rejected real orders whose timing field arrived as null —
+    //    an old cached page or a privacy tool stripping the value is enough to
+    //    cause that. A lost order costs far more than a spam email that slips
+    //    through, and the honeypot still covers this case.
+    const elapsed = Number(body.elapsedMs);
+    if (Number.isFinite(elapsed) && elapsed > 0 && elapsed < MIN_FILL_MS) return true;
+
+    return false;
+}
 
 function validateOrder(body) {
     const { items, customerInfo } = body;
@@ -195,7 +233,7 @@ function renderOrderHtml({ orderNumber, placedAt, customerInfo, items, totals })
     const unverifiedNotice = hasUnverified ? `
         <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:16px;margin:20px 0;">
             <strong>Heads up:</strong> one or more items were not found in the server-side
-            catalog (lib/catalog.js), so their name and price came straight from the
+            catalog (JS/catalog.js), so their name and price came straight from the
             customer's browser. Confirm those figures before quoting.
         </div>
     ` : '';

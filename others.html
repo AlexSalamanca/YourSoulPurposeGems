@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Others | Your Soul Purpose Gems</title>
     <meta name="description" content="Handmade Turkish eye pieces for protection — for your ceiling, your door and your keys.">
+    <link rel="icon" href="./Images/logo.jpeg">
+    <link rel="apple-touch-icon" href="./Images/logo.jpeg">
     <link rel="stylesheet" href="./CSS/style.css">
 </head>
 <body>
+<!-- header:start — generated from partials/header.html by tools/sync-header.js. Edit the partial, not this. -->
     <header>
         <nav>
             <a class="logo" href="./index.html">Your Soul Purpose Gems</a>
@@ -33,6 +36,7 @@
             </div>
         </nav>
     </header>
+<!-- header:end -->
 
     <main class="product-detail-main">
         <div class="back-button">
@@ -52,18 +56,13 @@
                     <img src="./Images/OjoTurcoTejido.png" alt="Woven Turkish Eye Hanging">
                 </div>
                 <div class="item-details">
-                    <h3 data-en="Woven Turkish Eye Hanging" data-es="Ojo Turco Tejido">Woven Turkish Eye Hanging</h3>
-                    <!-- TODO: placeholder price — confirm and keep in sync with lib/catalog.js -->
-                    <p class="item-price">$25.00</p>
+                    <h3></h3>
+                    <p class="item-price"></p>
                     <p class="item-description"
                        data-en="Handmade for protection — hang it from the ceiling to watch over your space."
                        data-es="Hecho a mano para la protección — cuélgalo del techo para cuidar tu espacio.">Handmade for protection — hang it from the ceiling to watch over your space.</p>
                     <button class="add-to-cart"
-                            data-id="other-1"
-                            data-name="Woven Turkish Eye Hanging"
-                            data-name-es="Ojo Turco Tejido"
-                            data-price="25.00"
-                            data-image="./Images/OjoTurcoTejido.png">
+                            data-id="other-1">
                         <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
                     </button>
                 </div>
@@ -74,18 +73,13 @@
                     <img src="./Images/Keychain.jpeg" alt="Turkish Eye Keychain">
                 </div>
                 <div class="item-details">
-                    <h3 data-en="Turkish Eye Keychain" data-es="Llavero Ojo Turco">Turkish Eye Keychain</h3>
-                    <!-- TODO: placeholder price — confirm and keep in sync with lib/catalog.js -->
-                    <p class="item-price">$12.00</p>
+                    <h3></h3>
+                    <p class="item-price"></p>
                     <p class="item-description"
                        data-en="Handmade for protection — keep it on your keys so it travels with you."
                        data-es="Hecho a mano para la protección — llévalo en tus llaves para que te acompañe.">Handmade for protection — keep it on your keys so it travels with you.</p>
                     <button class="add-to-cart"
-                            data-id="other-2"
-                            data-name="Turkish Eye Keychain"
-                            data-name-es="Llavero Ojo Turco"
-                            data-price="12.00"
-                            data-image="./Images/Keychain.jpeg">
+                            data-id="other-2">
                         <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
                     </button>
                 </div>
@@ -93,22 +87,16 @@
 
             <div class="item-card">
                 <div class="item-image">
-                    <!-- Filename is "Colagente", not "Colgante" — matches the file on disk. -->
-                    <img src="./Images/ColagentePuerta.jpeg" alt="Turkish Eye Door Hanger">
+                    <img src="./Images/ColgantePuerta.jpeg" alt="Turkish Eye Door Hanger">
                 </div>
                 <div class="item-details">
-                    <h3 data-en="Turkish Eye Door Hanger" data-es="Colgante Ojo Turco para Puerta">Turkish Eye Door Hanger</h3>
-                    <!-- TODO: placeholder price — confirm and keep in sync with lib/catalog.js -->
-                    <p class="item-price">$17.00</p>
+                    <h3></h3>
+                    <p class="item-price"></p>
                     <p class="item-description"
                        data-en="Handmade for protection — hangs on your door knob to guard the entrance."
                        data-es="Hecho a mano para la protección — se cuelga en la perilla de la puerta para proteger la entrada.">Handmade for protection — hangs on your door knob to guard the entrance.</p>
                     <button class="add-to-cart"
-                            data-id="other-3"
-                            data-name="Turkish Eye Door Hanger"
-                            data-name-es="Colgante Ojo Turco para Puerta"
-                            data-price="17.00"
-                            data-image="./Images/ColagentePuerta.jpeg">
+                            data-id="other-3">
                         <span data-en="Add to Cart" data-es="Agregar al Carrito">Add to Cart</span>
                     </button>
                 </div>
@@ -120,6 +108,8 @@
         <p>&copy; 2026 Your Soul Purpose Gems. All rights reserved.</p>
     </footer>
 
+    <!-- catalog.js must load before script.js, which reads window.CATALOG. -->
+    <script src="./JS/catalog.js"></script>
     <script src="./JS/script.js"></script>
 </body>
 </html>
