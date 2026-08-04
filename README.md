@@ -54,15 +54,22 @@ under **Project → Settings → Environment Variables**. See `.env.example`.
 |----------|----------|-------|
 | `RESEND_API_KEY` | yes | From https://resend.com/api-keys |
 | `ORDER_EMAIL_TO` | no | Defaults to `yoursoulpurposegems@gmail.com` |
-| `ORDER_EMAIL_FROM` | no | Defaults to Resend's shared `onboarding@resend.dev` |
+| `ORDER_EMAIL_FROM` | no | Defaults to `orders@yoursoulpurposegems.com` |
 
 ### About the sender address
 
-Until you verify your own domain in Resend, leave `ORDER_EMAIL_FROM` unset. The
-fallback `onboarding@resend.dev` works with no setup **but only delivers to the
-email address that owns the Resend account.** If order emails are not arriving,
-that is almost always why. Once your domain is verified, set
-`ORDER_EMAIL_FROM="Your Soul Purpose Gems <orders@yourdomain.com>"`.
+Mail goes out from `orders@yoursoulpurposegems.com`, a domain verified in Resend,
+so orders can be delivered to any address.
+
+**That domain must stay verified.** If Resend verification lapses or the DNS
+records change, every send fails and the API returns `502 Could not send the order
+email`. The Vercel function logs print the reason as
+`Resend rejected the order email: …`.
+
+To send from somewhere else, set `ORDER_EMAIL_FROM` rather than editing the code —
+but it must also be a Resend-verified domain. Resend's shared
+`onboarding@resend.dev` needs no verification but only delivers to the address
+that owns the Resend account, which is why it is no longer the default.
 
 ## Run locally
 
@@ -230,9 +237,9 @@ that need a human.
 - **Confirm every price.** They all live in `JS/catalog.js` and are live as
   written, taxed at 12%. Several began as placeholders before being set
   deliberately, so read that file top to bottom once and confirm each figure.
-- **Verify the Resend domain and switch the sender.** Until then order emails go
-  out from `onboarding@resend.dev`, which only delivers to the address that owns
-  the Resend account. Set `ORDER_EMAIL_FROM` once the domain is verified.
+- **Send one real test order** now that the sender is `orders@yoursoulpurposegems.com`.
+  The domain is verified, so delivery to any address should work — worth one
+  end-to-end order to confirm, and to check it does not land in spam.
 - **Confirm the GST/PST obligation with an accountant.** See the Sales tax
   section — the rates are right for BC, but whether you must charge them depends
   on your registrations.

@@ -8,7 +8,7 @@
 //   RESEND_API_KEY   your Resend API key
 // Optional:
 //   ORDER_EMAIL_TO   where orders are sent (default: yoursoulpurposegems@gmail.com)
-//   ORDER_EMAIL_FROM verified sender (default: Resend's shared onboarding sender)
+//   ORDER_EMAIL_FROM sender address (default: orders@yoursoulpurposegems.com)
 
 const { Resend } = require('resend');
 const { CATALOG } = require('../JS/catalog');
@@ -21,9 +21,10 @@ const MAX_QUANTITY = 99;
 // a false positive is a lost order.
 const MIN_FILL_MS = 3000;
 const DEFAULT_TO = 'yoursoulpurposegems@gmail.com';
-// onboarding@resend.dev works without domain verification but can only deliver
-// to the address that owns the Resend account. Swap in orders@<your-domain>
-// via ORDER_EMAIL_FROM once the domain is verified.
+// Sends from the shop's own verified domain, so orders can be delivered to any
+// address. This must stay a domain that is verified in Resend — an unverified one
+// makes every send fail with a 502. ORDER_EMAIL_FROM overrides it without a
+// code change.
 const DEFAULT_FROM = 'Your Soul Purpose Gems <orders@yoursoulpurposegems.com>';
 
 module.exports = async (req, res) => {
