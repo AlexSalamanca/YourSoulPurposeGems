@@ -182,6 +182,31 @@ A payment link's order stays in `DRAFT` until it is paid, and `SearchOrders`
 does not return `DRAFT` orders. To find one, use the id logged as
 `Created YSPG-… — Square order …` and call `GET /v2/orders/{id}`.
 
+### The site lives on `www` — this matters more than it looks
+
+Production is **`https://www.yoursoulpurposegems.com`**. The bare apex,
+`yoursoulpurposegems.com`, is served by a **different host entirely** and
+returns 404 for every path in this project.
+
+That already cost one silent failure: the Square webhook was registered against
+the apex, so every paid order was POSTed to that other server, got a 404, and no
+email was ever sent. Payments succeeded; notifications vanished.
+
+Three values must carry `www`, and the first two must match each other exactly:
+
+| Where | Value |
+|-------|-------|
+| Square subscription URL | `https://www.yoursoulpurposegems.com/api/webhook` |
+| `SQUARE_WEBHOOK_URL` | `https://www.yoursoulpurposegems.com/api/webhook` |
+| `SITE_URL` | `https://www.yoursoulpurposegems.com` |
+
+Square signs the notification URL together with the request body, so the first
+two differing by so much as a `www` fails every event — and the failure is
+invisible unless you read Square's delivery log.
+
+Pointing the apex at this project as a redirect would remove the whole class of
+problem. Until then, treat `www` as part of the domain.
+
 ### Square setup
 
 Everything here exists twice — once for sandbox, once for production. The values
@@ -193,7 +218,7 @@ signature fails.
    from Credentials.
 2. Take the **location id** from Locations (or `GET /v2/locations`).
 3. Add the webhook subscription under **Webhooks → Subscriptions**:
-   - URL `https://yoursoulpurposegems.com/api/webhook`
+   - URL `https://www.yoursoulpurposegems.com/api/webhook`
    - Event `payment.updated`
 4. Copy the **signature key** into `SQUARE_WEBHOOK_SIGNATURE_KEY`, and put the
    exact same URL into `SQUARE_WEBHOOK_URL`. Square signs that string together

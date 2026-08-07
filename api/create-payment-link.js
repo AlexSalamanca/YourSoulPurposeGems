@@ -13,7 +13,7 @@
 //
 // Required environment variables — see JS/square.js.
 // Optional:
-//   SITE_URL   canonical site origin, e.g. https://yoursoulpurposegems.com
+//   SITE_URL   canonical site origin, e.g. https://www.yoursoulpurposegems.com
 
 const crypto = require('crypto');
 const TAX = require('../JS/tax');
@@ -294,5 +294,5 @@ function safeOrigin(req) {
         console.warn('Ignoring an unrecognised Origin header:', header);
     }
 
-    return 'https://yoursoulpurposegems.com';
+    return 'https://www.yoursoulpurposegems.com';
 }

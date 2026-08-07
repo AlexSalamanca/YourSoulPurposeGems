@@ -10,7 +10,7 @@
 //
 // Set the subscription up in the Square Developer dashboard:
 //   Webhooks -> Subscriptions -> Add
-//   URL     https://yoursoulpurposegems.com/api/webhook
+//   URL     https://www.yoursoulpurposegems.com/api/webhook
 //   Events  payment.updated
 //
 // Sandbox and production have separate subscriptions and separate signature
