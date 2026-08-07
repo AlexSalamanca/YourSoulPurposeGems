@@ -4,8 +4,27 @@
 // order turns into an email, because it is the only place we know the money
 // actually arrived — the browser returning to success.html proves nothing.
 //
+// ---------------------------------------------------------------------------
+// WHY THIS FILE IS .mjs AND USES A Request/Response HANDLER
+//
+// Signature verification hashes the exact bytes Square sent, so the body must
+// reach us unparsed. The legacy way to arrange that —
+//   module.exports.config = { api: { bodyParser: false } }
+// — is a Next.js pattern that Vercel's current Node runtime ignores. It was
+// verified ignored in production: req.body arrived as a parsed object, the raw
+// bytes were gone, and every webhook failed with "Invalid signature" while
+// payments succeeded. Silent lost orders.
+//
+// Vercel's documented way to get a raw body is the Web-standard handler below,
+// where `await request.arrayBuffer()` is the untouched payload. .mjs because
+// package.json has no "type": "module" — the extension makes this one file ESM
+// without disturbing the CommonJS modules it imports.
+//
+// Do not convert this back to a (req, res) handler.
+// ---------------------------------------------------------------------------
+//
 // Required environment variables — see JS/square.js. In particular
-// SQUARE_WEBHOOK_URL must match the URL registered below character for
+// SQUARE_WEBHOOK_URL must match the URL registered in Square character for
 // character, because Square signs that string together with the body.
 //
 // Set the subscription up in the Square Developer dashboard:
@@ -16,42 +35,56 @@
 // Sandbox and production have separate subscriptions and separate signature
 // keys. Testing against the wrong one fails every signature check.
 
-const TAX = require('../JS/tax');
-const { resolveItems } = require('../JS/order');
-const { sendOrderEmail, placedAtPacific } = require('../JS/order-email');
-const { squareRequest, verifyWebhookSignature } = require('../JS/square');
+// Default imports, then destructure: these are CommonJS modules, and named
+// imports from CJS depend on static analysis that does not always succeed.
+import taxModule from '../JS/tax.js';
+import orderModule from '../JS/order.js';
+import orderEmailModule from '../JS/order-email.js';
+import squareModule from '../JS/square.js';
 
-module.exports = async (req, res) => {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+const TAX = taxModule;
+const { resolveItems } = orderModule;
+const { sendOrderEmail, placedAtPacific } = orderEmailModule;
+const { squareRequest, verifyWebhookSignature } = squareModule;
 
+function json(body, status = 200) {
+    return new Response(JSON.stringify(body), {
+        status,
+        headers: { 'content-type': 'application/json' }
+    });
+}
+
+// Only POST is exported, so every other method gets a 405 from the runtime.
+export async function POST(request) {
     let event;
     try {
-        const rawBody = await readRawBody(req);
-        verifyWebhookSignature(rawBody, req.headers['x-square-hmacsha256-signature']);
+        // The untouched bytes. Not request.text() — hashing must not depend on
+        // a decode/re-encode round trip.
+        const rawBody = Buffer.from(await request.arrayBuffer());
+        verifyWebhookSignature(rawBody, request.headers.get('x-square-hmacsha256-signature'));
         event = JSON.parse(rawBody.toString('utf8'));
     } catch (error) {
         // A 400 tells Square not to retry: a body we cannot verify will not
         // verify on the second attempt either.
         console.error('Webhook signature verification failed:', error.message);
-        return res.status(400).json({ error: 'Invalid signature' });
+        return json({ error: 'Invalid signature' }, 400);
     }
 
     // payment.updated fires on every state change — APPROVED, COMPLETED,
     // CANCELED, FAILED. Only a completed one is money in the account.
     const payment = event?.data?.object?.payment;
     if (event?.type !== 'payment.updated' || !payment) {
-        return res.status(200).json({ received: true });
+        return json({ received: true });
     }
 
     if (payment.status !== 'COMPLETED') {
         console.log(`Payment ${payment.id} is ${payment.status}; no email sent.`);
-        return res.status(200).json({ received: true });
+        return json({ received: true });
     }
 
     try {
         await notify(payment);
+        console.log(`Order email sent for payment ${payment.id}`);
     } catch (error) {
         // The customer has already been charged. Retrying the whole webhook
         // would risk a duplicate email without fixing anything, so log loudly
@@ -60,16 +93,8 @@ module.exports = async (req, res) => {
         console.error(`ORDER EMAIL FAILED for completed payment ${payment.id}:`, error);
     }
 
-    return res.status(200).json({ received: true });
-};
-
-// Signature verification hashes the exact bytes Square sent, so the body must
-// not be parsed before we see it. Vercel's Node runtime reads this off the
-// module, so it has to be attached after the handler assignment above — setting
-// it first would be wiped out by it.
-module.exports.config = {
-    api: { bodyParser: false }
-};
+    return json({ received: true });
+}
 
 async function notify(payment) {
     if (!payment.order_id) {
@@ -135,7 +160,7 @@ async function notify(payment) {
 // create-payment-link.js packs the whole order context into one JSON blob split
 // across d0, d1, ... — Square allows only 10 metadata pairs of 255 characters
 // each. Concatenating in order rebuilds the original string, splits included.
-function decodeOrderContext(metadata) {
+export function decodeOrderContext(metadata) {
     let encoded = '';
     for (let i = 0; metadata[`d${i}`] !== undefined; i++) {
         encoded += metadata[`d${i}`];
@@ -160,7 +185,7 @@ function decodeOrderContext(metadata) {
 }
 
 // "bracelet-1:2,quartz-3:1" -> [{id, quantity}, ...]
-function decodeItems(encoded) {
+export function decodeItems(encoded) {
     return String(encoded)
         .split(',')
         .filter(Boolean)
@@ -168,23 +193,4 @@ function decodeItems(encoded) {
             const separator = part.lastIndexOf(':');
             return { id: part.slice(0, separator), quantity: Number(part.slice(separator + 1)) };
         });
-}
-
-async function readRawBody(req) {
-    // If bodyParser was not disabled, Vercel hands us a parsed object and the
-    // stream is spent. Say so plainly rather than failing on a signature
-    // mismatch that looks like a wrong key.
-    if (req.body !== undefined && !Buffer.isBuffer(req.body) && typeof req.body !== 'string') {
-        throw new Error('Request body was parsed before verification — the bodyParser:false config is not taking effect');
-    }
-    if (Buffer.isBuffer(req.body)) return req.body;
-    if (typeof req.body === 'string') return Buffer.from(req.body, 'utf8');
-
-    // Buffered as binary, not concatenated as a string: a string join splits
-    // multi-byte characters across chunk boundaries and corrupts the hash.
-    const chunks = [];
-    for await (const chunk of req) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk, 'utf8') : chunk);
-    }
-    return Buffer.concat(chunks);
 }
