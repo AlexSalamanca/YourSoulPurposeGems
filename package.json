@@ -2,7 +2,7 @@
   "name": "yoursoulpurposegems",
   "version": "1.0.0",
   "private": true,
-  "description": "Your Soul Purpose Gems storefront — static pages plus a Vercel serverless function that emails order requests.",
+  "description": "Your Soul Purpose Gems storefront — static pages plus Vercel serverless functions for Square card payments and emailed order requests.",
   "engines": {
     "node": ">=18"
   },

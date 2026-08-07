@@ -408,49 +408,43 @@ function cartTotals() {
 }
 
 // ============================================
-// ORDER SUBMISSION (no payment — emails the shop owner)
+// ORDER SUBMISSION
 // ============================================
+//
+// Two endpoints, chosen by the payment method:
+//
+//   card               /api/create-payment-link -> redirect to Square Checkout
+//   cash / e-transfer  /api/submit-order        -> emails the shop owner
+//
+// The server enforces the same split, so an edited page cannot email an order
+// that was meant to be paid for, or reach Square with a cash order.
 
 async function submitOrder(customerInfo) {
     const submitBtn = document.getElementById('submitOrderBtn');
 
     if (cart.length === 0) {
-        alert(t('Your cart is empty.', 'Tu carrito está vacío.'));
+        showFormError(t('Your cart is empty.', 'Tu carrito está vacío.'));
         return;
     }
 
     const originalText = submitBtn ? submitBtn.textContent : '';
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = t('Submitting...', 'Enviando...');
+        submitBtn.textContent = customerInfo.paymentMethod === 'card'
+            ? t('Redirecting to payment...', 'Redirigiendo al pago...')
+            : t('Submitting...', 'Enviando...');
     }
+    hideFormError();
 
     try {
-        // Relative path: the API and the pages ship in the same Vercel
-        // deployment, so there is no host to hardcode and no CORS hop.
-        const response = await fetch('/api/submit-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                items: cart,
-                customerInfo,
-                // Bot signals, both checked server-side. See api/submit-order.js.
-                website: document.getElementById('website')?.value || '',
-                elapsedMs: Date.now() - pageLoadedAt
-            })
-        });
-
-        const result = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-            throw new Error(result.error || `Request failed with status ${response.status}`);
+        if (customerInfo.paymentMethod === 'card') {
+            await startCardCheckout(customerInfo);
+        } else {
+            await sendOrderRequest(customerInfo);
         }
-
-        clearCartStorage();
-        window.location.href = `./success.html?order=${encodeURIComponent(result.orderNumber || '')}`;
     } catch (error) {
         console.error('Could not submit the order:', error);
-        alert(t(
+        showFormError(error.message || t(
             'An error occurred. Please try again or contact us directly at yoursoulpurposegems@gmail.com.',
             'Ocurrió un error. Por favor intenta de nuevo o contáctanos directamente en yoursoulpurposegems@gmail.com.'
         ));
@@ -459,6 +453,64 @@ async function submitOrder(customerInfo) {
             submitBtn.textContent = originalText || t('Submit Order Request', 'Enviar Solicitud de Pedido');
         }
     }
+}
+
+// The card path sends ids and quantities only. Every line is priced from
+// JS/catalog.js server-side, and an id that is not in it is refused outright
+// rather than charged at whatever the browser claimed.
+function orderLines() {
+    return cart.map(item => ({ id: item.id, quantity: item.quantity }));
+}
+
+async function startCardCheckout(customerInfo) {
+    // Relative path: the API and the pages ship in the same Vercel deployment,
+    // so there is no host to hardcode and no CORS hop.
+    const response = await fetch('/api/create-payment-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: orderLines(), customerInfo })
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.url) {
+        throw new Error(result.error || t(
+            'Could not start the payment. Please try again.',
+            'No se pudo iniciar el pago. Por favor intenta de nuevo.'
+        ));
+    }
+
+    // The cart is deliberately left in place until the payment succeeds —
+    // success.html clears it. Someone who abandons Square's page comes back to
+    // a cart that still has their items in it.
+    window.location.href = result.url;
+}
+
+async function sendOrderRequest(customerInfo) {
+    const response = await fetch('/api/submit-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            // Full lines, not just ids: nothing is being charged here, and a
+            // line whose id has since left the catalog is more useful in the
+            // email at its last known price — flagged as unverified — than at
+            // $0.00. The server still prefers the catalog wherever it has one.
+            items: cart,
+            customerInfo,
+            // Bot signals, both checked server-side. See api/submit-order.js.
+            website: document.getElementById('website')?.value || '',
+            elapsedMs: Date.now() - pageLoadedAt
+        })
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        throw new Error(result.error || `Request failed with status ${response.status}`);
+    }
+
+    clearCartStorage();
+    window.location.href = `./success.html?order=${encodeURIComponent(result.orderNumber || '')}`;
 }
 
 // ============================================
@@ -597,20 +649,222 @@ function setupSmoothScrolling() {
 // CHECKOUT FORM
 // ============================================
 
+// Mirrors the rules in JS/order.js. The server is what actually decides — this
+// exists so the customer is told before filling the rest of the form in, not
+// after a round trip.
+const CANADIAN_POSTAL_CODE = /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/i;
+
+function el(id) {
+    return document.getElementById(id);
+}
+
+function showFormError(message) {
+    const box = el('formError');
+    if (!box) {
+        alert(message);
+        return;
+    }
+    box.textContent = message;
+    box.hidden = false;
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function hideFormError() {
+    const box = el('formError');
+    if (box) {
+        box.hidden = true;
+        box.textContent = '';
+    }
+}
+
+function selectedPaymentMethod() {
+    return document.querySelector('input[name="paymentMethod"]:checked')?.value || '';
+}
+
+// Called whenever the delivery preference, country or payment method changes.
+// Everything conditional about the form is decided here in one place, so the
+// states cannot drift apart.
+function updateCheckoutForm() {
+    const deliveryMethod = el('deliveryMethod')?.value || '';
+    const isDelivery = deliveryMethod === 'delivery';
+    const addressFields = el('addressFields');
+    const paymentFields = el('paymentFields');
+
+    if (!addressFields || !paymentFields) return;
+
+    addressFields.hidden = !isDelivery;
+    paymentFields.hidden = deliveryMethod === '';
+
+    // required is toggled rather than set in the HTML: a required field inside a
+    // hidden fieldset makes the browser refuse to submit while being unable to
+    // focus what it is complaining about.
+    ['addressLine1', 'addressCity', 'addressProvince', 'addressPostalCode'].forEach(id => {
+        const field = el(id);
+        if (field) field.required = isDelivery;
+    });
+
+    const outsideCanada = isDelivery && el('addressCountry')?.value !== 'CA';
+    const warning = el('countryWarning');
+    if (warning) warning.hidden = !outsideCanada;
+
+    // Address lines are pointless while we cannot deliver there, so they are
+    // switched off along with the requirement.
+    if (outsideCanada) {
+        ['addressLine1', 'addressLine2', 'addressCity', 'addressProvince', 'addressPostalCode'].forEach(id => {
+            const field = el(id);
+            if (field) {
+                field.required = false;
+                field.disabled = true;
+            }
+        });
+    } else {
+        ['addressLine1', 'addressLine2', 'addressCity', 'addressProvince', 'addressPostalCode'].forEach(id => {
+            const field = el(id);
+            if (field) field.disabled = false;
+        });
+    }
+
+    // Delivery is card-only. Disabling rather than hiding keeps the reason
+    // visible — the note underneath explains why.
+    document.querySelectorAll('.payment-option[data-pickup-only]').forEach(option => {
+        const radio = option.querySelector('input[type="radio"]');
+        option.classList.toggle('is-disabled', isDelivery);
+        if (radio) {
+            radio.disabled = isDelivery;
+            if (isDelivery && radio.checked) radio.checked = false;
+        }
+    });
+
+    const note = el('deliveryPaymentNote');
+    if (note) note.hidden = !isDelivery;
+
+    if (isDelivery) {
+        const card = document.querySelector('input[name="paymentMethod"][value="card"]');
+        if (card && !selectedPaymentMethod()) card.checked = true;
+    }
+
+    document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+        radio.required = deliveryMethod !== '';
+    });
+
+    updateSubmitButton();
+}
+
+// The button says what pressing it will do. Written as data-en/data-es so the
+// language switcher keeps working on it like any other translated element.
+function updateSubmitButton() {
+    const button = el('submitOrderBtn');
+    if (!button) return;
+
+    const outsideCanada = el('deliveryMethod')?.value === 'delivery'
+        && el('addressCountry')?.value !== 'CA';
+
+    let en, es;
+    if (outsideCanada) {
+        en = 'Contact Us to Order';
+        es = 'Contáctanos para Ordenar';
+    } else if (selectedPaymentMethod() === 'card') {
+        en = 'Continue to Payment';
+        es = 'Continuar al Pago';
+    } else {
+        en = 'Submit Order Request';
+        es = 'Enviar Solicitud de Pedido';
+    }
+
+    button.setAttribute('data-en', en);
+    button.setAttribute('data-es', es);
+    button.textContent = t(en, es);
+    button.disabled = false;
+}
+
+// Returns the customerInfo to send, or null after reporting what is missing.
+function collectCustomerInfo() {
+    const deliveryMethod = el('deliveryMethod').value;
+    const paymentMethod = selectedPaymentMethod();
+
+    if (!deliveryMethod) {
+        showFormError(t('Choose pickup or delivery.', 'Elige recoger o entrega a domicilio.'));
+        return null;
+    }
+    if (!paymentMethod) {
+        showFormError(t('Choose a payment method.', 'Elige un método de pago.'));
+        return null;
+    }
+
+    const info = {
+        name: el('customerName').value.trim(),
+        email: el('customerEmail').value.trim(),
+        phone: el('customerPhone').value.trim(),
+        deliveryMethod,
+        paymentMethod,
+        address: null
+    };
+
+    if (deliveryMethod !== 'delivery') {
+        return info;
+    }
+
+    if (el('addressCountry').value !== 'CA') {
+        showFormError(t(
+            'We deliver within Canada only. Please contact us to arrange delivery elsewhere — shipping costs would be added to your total.',
+            'Solo entregamos dentro de Canadá. Por favor contáctanos para coordinar la entrega en otro país — los costos de envío se agregarían a tu total.'
+        ));
+        return null;
+    }
+
+    const postalCode = el('addressPostalCode').value.trim();
+    if (!CANADIAN_POSTAL_CODE.test(postalCode)) {
+        showFormError(t('Enter a valid Canadian postal code, for example V6B 1A1.',
+                        'Ingresa un código postal canadiense válido, por ejemplo V6B 1A1.'));
+        return null;
+    }
+
+    info.address = {
+        line1: el('addressLine1').value.trim(),
+        line2: el('addressLine2').value.trim(),
+        city: el('addressCity').value.trim(),
+        province: el('addressProvince').value,
+        postalCode,
+        country: 'CA'
+    };
+
+    if (!info.address.line1 || !info.address.city || !info.address.province) {
+        showFormError(t('Fill in your full delivery address.', 'Completa tu dirección de entrega.'));
+        return null;
+    }
+
+    return info;
+}
+
 function setupCheckoutForm() {
     const orderForm = document.getElementById('orderForm');
     if (!orderForm) return;
 
+    el('deliveryMethod')?.addEventListener('change', () => {
+        hideFormError();
+        updateCheckoutForm();
+    });
+
+    el('addressCountry')?.addEventListener('change', () => {
+        hideFormError();
+        updateCheckoutForm();
+    });
+
+    orderForm.addEventListener('change', event => {
+        if (event.target.name === 'paymentMethod') {
+            hideFormError();
+            updateSubmitButton();
+        }
+    });
+
     orderForm.addEventListener('submit', event => {
         event.preventDefault();
 
-        submitOrder({
-            name: document.getElementById('customerName').value.trim(),
-            email: document.getElementById('customerEmail').value.trim(),
-            phone: document.getElementById('customerPhone').value.trim(),
-            deliveryMethod: document.getElementById('deliveryMethod').value
-        });
+        const customerInfo = collectCustomerInfo();
+        if (customerInfo) submitOrder(customerInfo);
     });
+
+    updateCheckoutForm();
 }
 
 // Quantity and remove buttons are created after load, so listen on the

@@ -1,3 +1,7 @@
 {
-  "cleanUrls": false
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "routes": [
+    { "src": "/JS/(order|order-email|square)\\.js", "status": 404 },
+    { "handle": "filesystem" }
+  ]
 }

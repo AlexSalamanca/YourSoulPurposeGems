@@ -88,22 +88,136 @@
                         </div>
                         
                         <div class="form-group">
-                            <label data-en="Delivery Preference *" data-es="Preferencia de Entrega *">Delivery Preference *</label>
+                            <label for="deliveryMethod" data-en="Delivery Preference *" data-es="Preferencia de Entrega *">Delivery Preference *</label>
                             <select id="deliveryMethod" name="deliveryMethod" required>
                                 <option value="" data-en="Select..." data-es="Seleccionar...">Select...</option>
                                 <option value="pickup" data-en="Pickup" data-es="Recoger">Pickup</option>
                                 <option value="delivery" data-en="Delivery" data-es="Entrega a Domicilio">Delivery</option>
                             </select>
                         </div>
-                        
+
+                        <!-- Shown by JS/script.js only when "Delivery" is chosen.
+                             hidden (the attribute, not a class) so the fields are
+                             also removed from the tab order and from screen
+                             readers while they do not apply. -->
+                        <fieldset id="addressFields" class="address-fields" hidden>
+                            <legend data-en="Delivery Address" data-es="Dirección de Entrega">Delivery Address</legend>
+
+                            <div class="form-group">
+                                <label for="addressCountry" data-en="Country *" data-es="País *">Country *</label>
+                                <select id="addressCountry" name="addressCountry">
+                                    <option value="CA" data-en="Canada" data-es="Canadá">Canada</option>
+                                    <option value="OTHER" data-en="Outside Canada" data-es="Fuera de Canadá">Outside Canada</option>
+                                </select>
+                            </div>
+
+                            <!-- Unhidden by JS/script.js when the country is not
+                                 Canada. role="alert" so it is announced rather
+                                 than only appearing. -->
+                            <div id="countryWarning" class="delivery-warning" role="alert" hidden>
+                                <p data-en="We currently deliver within Canada only. Delivery costs outside Canada are not included in the prices shown and would be added to your final total — please contact us before ordering so we can quote you."
+                                   data-es="Actualmente solo entregamos dentro de Canadá. Los costos de envío fuera de Canadá no están incluidos en los precios mostrados y se agregarían a tu total final — por favor contáctanos antes de ordenar para darte una cotización.">
+                                    We currently deliver within Canada only. Delivery costs outside Canada are not included in the prices shown and would be added to your final total — please contact us before ordering so we can quote you.
+                                </p>
+                                <a href="./contact.html" data-en="Contact us →" data-es="Contáctanos →">Contact us →</a>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="addressLine1" data-en="Street Address *" data-es="Dirección *">Street Address *</label>
+                                <input type="text" id="addressLine1" name="addressLine1" autocomplete="address-line1" placeholder="123 Main St">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="addressLine2" data-en="Apartment, Suite, Unit (optional)" data-es="Apartamento, Suite, Unidad (opcional)">Apartment, Suite, Unit (optional)</label>
+                                <input type="text" id="addressLine2" name="addressLine2" autocomplete="address-line2">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="addressCity" data-en="City *" data-es="Ciudad *">City *</label>
+                                    <input type="text" id="addressCity" name="addressCity" autocomplete="address-level2">
+                                </div>
+                                <div class="form-group">
+                                    <label for="addressProvince" data-en="Province *" data-es="Provincia *">Province *</label>
+                                    <select id="addressProvince" name="addressProvince" autocomplete="address-level1">
+                                        <option value="" data-en="Select..." data-es="Seleccionar...">Select...</option>
+                                        <option value="AB">Alberta</option>
+                                        <option value="BC">British Columbia</option>
+                                        <option value="MB">Manitoba</option>
+                                        <option value="NB">New Brunswick</option>
+                                        <option value="NL">Newfoundland and Labrador</option>
+                                        <option value="NT">Northwest Territories</option>
+                                        <option value="NS">Nova Scotia</option>
+                                        <option value="NU">Nunavut</option>
+                                        <option value="ON">Ontario</option>
+                                        <option value="PE">Prince Edward Island</option>
+                                        <option value="QC">Quebec</option>
+                                        <option value="SK">Saskatchewan</option>
+                                        <option value="YT">Yukon</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="addressPostalCode" data-en="Postal Code *" data-es="Código Postal *">Postal Code *</label>
+                                <input type="text" id="addressPostalCode" name="addressPostalCode" autocomplete="postal-code" placeholder="V6B 1A1" inputmode="text">
+                            </div>
+                        </fieldset>
+
+                        <!-- Payment method. The cash and e-transfer options are
+                             disabled by JS/script.js for delivery orders — the
+                             API refuses that combination too, this just says so
+                             before the customer fills the rest in. -->
+                        <fieldset id="paymentFields" class="payment-fields" hidden>
+                            <legend data-en="Payment Method *" data-es="Método de Pago *">Payment Method *</legend>
+
+                            <label class="payment-option">
+                                <input type="radio" name="paymentMethod" value="card">
+                                <span>
+                                    <strong data-en="Pay now by card" data-es="Pagar ahora con tarjeta">Pay now by card</strong>
+                                    <small data-en="Secure checkout with Square — the same card reader we use at the markets."
+                                           data-es="Pago seguro con Square — el mismo sistema que usamos en los mercados.">Secure checkout with Square — the same card reader we use at the markets.</small>
+                                </span>
+                            </label>
+
+                            <label class="payment-option" data-pickup-only>
+                                <input type="radio" name="paymentMethod" value="etransfer">
+                                <span>
+                                    <strong data-en="Interac e-Transfer" data-es="Transferencia Interac">Interac e-Transfer</strong>
+                                    <small data-en="Pickup only. We send you the transfer details after your request."
+                                           data-es="Solo para recoger. Te enviamos los datos de la transferencia después de tu solicitud.">Pickup only. We send you the transfer details after your request.</small>
+                                </span>
+                            </label>
+
+                            <label class="payment-option" data-pickup-only>
+                                <input type="radio" name="paymentMethod" value="cash">
+                                <span>
+                                    <strong data-en="Cash on pickup" data-es="Efectivo al recoger">Cash on pickup</strong>
+                                    <small data-en="Pickup only. Pay when you collect your order."
+                                           data-es="Solo para recoger. Paga cuando recojas tu pedido.">Pickup only. Pay when you collect your order.</small>
+                                </span>
+                            </label>
+
+                            <p id="deliveryPaymentNote" class="payment-hint" hidden
+                               data-en="Delivery orders are paid by card at checkout, so we can ship as soon as the payment clears."
+                               data-es="Los pedidos con entrega se pagan con tarjeta al finalizar la compra, para poder enviarlo en cuanto se acredite el pago.">
+                                Delivery orders are paid by card at checkout, so we can ship as soon as the payment clears.
+                            </p>
+                        </fieldset>
+
                         <div class="payment-notice">
                             <h4 data-en="Payment Information" data-es="Información de Pago">Payment Information</h4>
-                            <p data-en="Prices include BC sales tax as shown above. No payment is required at this time — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery."
-                               data-es="Los precios incluyen los impuestos de BC como se muestra arriba. No se requiere pago en este momento — te contactaremos por WhatsApp para coordinar el pago (efectivo o e-transfer) y la entrega o recogida.">
-                                Prices include BC sales tax as shown above. No payment is required at this time — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery.
+                            <p id="paymentNoticeText"
+                               data-en="Prices include BC sales tax as shown above. Card payments are handled by Square — we never see your card details. If you choose cash or e-transfer, nothing is charged now: we contact you via WhatsApp to arrange payment and your pickup."
+                               data-es="Los precios incluyen los impuestos de BC como se muestra arriba. Los pagos con tarjeta son procesados por Square — nunca vemos los datos de tu tarjeta. Si eliges efectivo o transferencia, no se cobra nada ahora: te contactamos por WhatsApp para coordinar el pago y la recogida.">
+                                Prices include BC sales tax as shown above. Card payments are handled by Square — we never see your card details. If you choose cash or e-transfer, nothing is charged now: we contact you via WhatsApp to arrange payment and your pickup.
                             </p>
                         </div>
-                        
+
+                        <!-- Validation problems land here rather than in alert(),
+                             which is easy to dismiss without reading. -->
+                        <div id="formError" class="form-error" role="alert" hidden></div>
+
                         <!-- Honeypot. Hidden from people, but bots that fill every
                              field will complete it, and the API rejects any order
                              that arrives with it set. Not a label a real customer

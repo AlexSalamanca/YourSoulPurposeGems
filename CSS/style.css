@@ -921,6 +921,139 @@ footer {
     gap: 1rem;
 }
 
+/* The conditional parts of the checkout form use the hidden attribute so they
+   leave the tab order too. Some of the blocks below set their own display, which
+   would otherwise win over the browser default for [hidden]. */
+[hidden] {
+    display: none !important;
+}
+
+/* Conditional sections: the delivery address and the payment choice.
+   fieldset/legend carry browser default borders and offsets that do not match
+   the rest of the form, so both are reset here. */
+.address-fields,
+.payment-fields {
+    border: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+}
+
+.address-fields legend,
+.payment-fields legend {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.address-fields input:disabled,
+.address-fields select:disabled {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* Shown when the delivery country is not Canada. */
+.delivery-warning {
+    background: #fff7ed;
+    border-left: 4px solid #f59e0b;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+}
+
+.delivery-warning p {
+    color: #7c2d12;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.delivery-warning a {
+    color: #b45309;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.delivery-warning a:hover {
+    text-decoration: underline;
+}
+
+.payment-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.3s, background 0.3s;
+}
+
+.payment-option:hover {
+    border-color: #667eea;
+}
+
+.payment-option input[type="radio"] {
+    /* Nudged down to sit on the first line of the label rather than above it. */
+    margin-top: 0.25rem;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    accent-color: #667eea;
+}
+
+.payment-option:has(input:checked) {
+    border-color: #667eea;
+    background: #f5f6ff;
+}
+
+.payment-option strong {
+    display: block;
+    color: #333;
+}
+
+.payment-option small {
+    display: block;
+    color: #666;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-top: 0.15rem;
+}
+
+/* Delivery orders are card-only, so the pickup-only options are dimmed rather
+   than removed — the note underneath explains why they cannot be chosen. */
+.payment-option.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #fafafa;
+}
+
+.payment-option.is-disabled:hover {
+    border-color: #ddd;
+}
+
+.payment-hint {
+    color: #667eea;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-top: 0.5rem;
+}
+
+/* Validation problems. Kept out of alert(), which is dismissed without reading. */
+.form-error {
+    background: #fef2f2;
+    border-left: 4px solid #dc2626;
+    color: #991b1b;
+    padding: 1rem 1.25rem;
+    border-radius: 5px;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
 .payment-notice {
     background: #f0f9ff;
     border-left: 4px solid #667eea;
@@ -1186,6 +1319,13 @@ footer {
 
     .checkout-btn {
         min-height: 48px;
+    }
+
+    /* City and Province side by side leaves each about 120px wide on a phone,
+       which is not enough for a province name. */
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
     }
 
     .nav-links {

@@ -41,9 +41,21 @@
     <main class="success-main">
         <section class="success-content">
             <div class="success-icon">✓</div>
-            <h1 data-en="Order Request Received!" data-es="¡Solicitud de Pedido Recibida!">Order Request Received!</h1>
-            <p data-en="Thank you! Your request has been sent to us. No payment has been taken — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery."
-               data-es="¡Gracias! Tu solicitud nos ha sido enviada. No se ha realizado ningún pago — te contactaremos por WhatsApp para coordinar el pago (efectivo o e-transfer) y la entrega o recogida.">Thank you! Your request has been sent to us. No payment has been taken — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate pickup or delivery.</p>
+
+            <!-- Two endings, one page. The script below reveals whichever matches
+                 how the customer got here and removes the other, so the language
+                 switcher never has a hidden copy to translate. -->
+            <div id="paidMessage" hidden>
+                <h1 data-en="Payment Received!" data-es="¡Pago Recibido!">Payment Received!</h1>
+                <p data-en="Thank you! Your payment went through and your order is confirmed. A receipt is on its way to your email, and we will be in touch to arrange your pickup or delivery."
+                   data-es="¡Gracias! Tu pago se procesó y tu pedido está confirmado. Recibirás un recibo por correo electrónico y te contactaremos para coordinar la entrega o recogida.">Thank you! Your payment went through and your order is confirmed. A receipt is on its way to your email, and we will be in touch to arrange your pickup or delivery.</p>
+            </div>
+
+            <div id="requestMessage" hidden>
+                <h1 data-en="Order Request Received!" data-es="¡Solicitud de Pedido Recibida!">Order Request Received!</h1>
+                <p data-en="Thank you! Your request has been sent to us. No payment has been taken — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate your pickup."
+                   data-es="¡Gracias! Tu solicitud nos ha sido enviada. No se ha realizado ningún pago — te contactaremos por WhatsApp para coordinar el pago (efectivo o e-transfer) y la recogida.">Thank you! Your request has been sent to us. No payment has been taken — we will contact you via WhatsApp to arrange payment (cash or e-transfer) and coordinate your pickup.</p>
+            </div>
 
             <div class="order-info" id="orderInfo" hidden>
                 <h2 data-en="Order Reference" data-es="Referencia del Pedido">Order Reference</h2>
@@ -65,15 +77,36 @@
 
     <script src="./JS/script.js"></script>
     <script>
-        // The cart was already cleared before redirecting here, but clear it
-        // again in case someone lands on this page directly after a back/forward.
+        // Reaching this page means the order left the cart one way or the other:
+        // Square only redirects here after a payment, and the request path
+        // clears the cart before navigating. Clearing again covers a back/forward
+        // landing.
         localStorage.removeItem('cart');
+        document.querySelectorAll('.cart-count').forEach(el => { el.textContent = '0'; });
 
-        // submitOrder() redirects here with ?order=YSPG-...
+        const params = new URLSearchParams(window.location.search);
+        // Square appends ?orderId=…&transactionId=…&referenceId=YSPG-… itself.
+        // The cash / e-transfer path arrives as ?order=YSPG-… instead.
+        //
+        // This only decides which message to show. It is not proof of payment —
+        // api/webhook.js is what confirms the money arrived, and it is the only
+        // thing that emails the order.
+        const squareOrderId = params.get('orderId') || params.get('transactionId');
+        const paid = Boolean(squareOrderId);
+
+        // The message that does not apply is removed rather than left hidden, so
+        // applyLanguage() in JS/script.js has nothing stale to translate.
+        const keep = document.getElementById(paid ? 'paidMessage' : 'requestMessage');
+        const drop = document.getElementById(paid ? 'requestMessage' : 'paidMessage');
+        keep.hidden = false;
+        drop.remove();
+
         // textContent, not innerHTML — the value comes from the URL.
-        const orderNumber = new URLSearchParams(window.location.search).get('order');
-        if (orderNumber) {
-            document.getElementById('orderNumber').textContent = orderNumber.slice(0, 40);
+        // referenceId is the YSPG-… number we set on the Square order, so both
+        // paths show the customer the same shape of reference.
+        const reference = params.get('referenceId') || params.get('order') || squareOrderId;
+        if (reference) {
+            document.getElementById('orderNumber').textContent = reference.slice(0, 80);
             document.getElementById('orderInfo').hidden = false;
         }
     </script>

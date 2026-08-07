@@ -1,9 +1,10 @@
-# Keeps build-time and parked files off the public site. None of these are needed
-# at runtime — api/submit-order.js only requires JS/catalog.js and JS/tax.js, both
-# of which stay.
+# Keeps build-time files off the public site. Neither is needed at runtime.
+#
+# JS/ is deliberately NOT listed: api/*.js require order.js, order-email.js,
+# square.js, catalog.js and tax.js from there, and excluding the folder would
+# break every function at import time.
 #
 # If a deploy ever 404s on something unexpected, check here first.
 
 tools/
 partials/
-future-payments/
